@@ -1,0 +1,116 @@
+/* =====================================================
+   Asset Control — Page Specific Styles
+   ===================================================== */
+
+/* Stat icon */
+.stat-icon {
+    width: 55px; height: 55px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #fff; flex-shrink: 0;
+}
+.icon-blue   { background: linear-gradient(135deg, #4e54c8, #8f94fb); }
+.icon-green  { background: linear-gradient(135deg, #11998e, #38ef7d); }
+.icon-orange { background: linear-gradient(135deg, #f7971e, #ffd200); }
+.icon-red    { background: linear-gradient(135deg, #e52d27, #f5af19); }
+.icon-teal   { background: linear-gradient(135deg, #1FA2FF, #12D8FA); }
+
+/* Stat card */
+.stat-info-card {
+    border-radius: 16px; background: #fff; border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+    padding: 20px 24px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.stat-info-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.stat-info-card .stat-number { font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+.stat-info-card .stat-label  { font-size: 13px; color: #6c757d; }
+
+/* Action bar */
+.action-bar {
+    background: #fff; border-radius: 16px; padding: 16px 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.action-bar .search-box { flex: 1; min-width: 200px; position: relative; }
+.action-bar .search-box input {
+    padding-left: 38px; border-radius: 10px; border: 1px solid #e0e0e0;
+    font-family: 'Kanit', sans-serif; font-size: 14px; height: 40px;
+}
+.action-bar .search-box i {
+    position: absolute; left: 12px; top: 50%;
+    transform: translateY(-50%); color: #aaa; font-size: 18px;
+}
+
+/* Data table container */
+.table-container-custom {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); overflow: hidden;
+}
+.table-container-custom .card-header-custom { padding: 18px 24px 0; border-bottom: 1px solid #f0f0f0; }
+.table-container-custom .card-body-custom   { padding: 0 24px 24px; }
+.table thead th {
+    background: #f8f9fa; font-weight: 600; font-size: 13px;
+    color: #555; border-bottom: 2px solid #e9ecef; white-space: nowrap;
+}
+.table tbody tr { font-size: 14px; transition: background 0.15s; }
+.table tbody tr:hover { background: #f5f7ff; }
+
+/* Page-level tabs */
+.asset-tabs .nav-link {
+    font-family: 'Kanit', sans-serif; font-size: 13px; font-weight: 500;
+    color: #6c757d; border: none; padding: 10px 16px;
+    border-bottom: 3px solid transparent; border-radius: 0;
+}
+.asset-tabs .nav-link.active { color: #4e54c8; border-bottom: 3px solid #4e54c8; background: transparent; }
+
+/* Status badges */
+.badge-available { background: #e8f5e9; color: #2e7d32; font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.badge-inuse     { background: #e3f2fd; color: #1565c0; font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.badge-repair    { background: #fff3e0; color: #e65100; font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+.badge-writeoff  { background: #ffebee; color: #c62828; font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 500; }
+
+/* Row action icon buttons */
+.btn-action {
+    width: 32px; height: 32px; padding: 0; border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px; border: none; transition: opacity 0.2s;
+}
+.btn-action:hover { opacity: 0.8; }
+
+/* Form controls used in all sub-pages */
+.form-label { font-size: 14px; font-weight: 500; color: #444; }
+.form-control, .form-select {
+    font-family: 'Kanit', sans-serif; font-size: 14px;
+    border-radius: 10px; border: 1px solid #e0e0e0;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #4e54c8;
+    box-shadow: 0 0 0 0.2rem rgba(78,84,200,0.15);
+}
+
+/* Detail-doc tab nav */
+.detail-tabs .nav-link {
+    font-family: 'Kanit', sans-serif; font-size: 14px; font-weight: 500;
+    color: #555; border: 1px solid #dee2e6; border-bottom: none;
+    border-radius: 8px 8px 0 0; padding: 8px 20px; background: #f8f9fa;
+}
+.detail-tabs .nav-link.active { color: #4e54c8; background: #fff; border-bottom: 2px solid #fff; }
+
+/* Document (print) styles */
+#printableDoc { font-family: 'Kanit', sans-serif; font-size: 14px; color: #000; background: #fff; }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.doc-table th, .doc-table td { border: 1px solid #333; padding: 4px 8px; vertical-align: middle; }
+.doc-table th { background: #f0f0f0; text-align: center; font-weight: 600; }
+.doc-table td { text-align: center; }
+.doc-table td.text-left { text-align: left; }
+.doc-underline { border: none; border-bottom: 1px solid #555; display: inline-block; min-width: 120px; }
+
+/* Print media */
+@media print {
+    body * { visibility: hidden !important; }
+    #printableDoc, #printableDoc * { visibility: visible !important; }
+    #printableDoc { position: fixed; left: 0; top: 0; width: 100%; padding: 0; margin: 0; }
+    .no-print { display: none !important; }
+    .modal { position: static !important; overflow: visible !important; }
+}
