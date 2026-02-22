@@ -460,8 +460,8 @@ body {
             <div class="mod-title">ควบคุมทรัพย์สิน</div>
             <div class="mod-desc">ขึ้นทะเบียนครุภัณฑ์ ยืม-คืน ตรวจสอบสถานะ สแกน QR Code และประเมินค่าเสื่อมราคา</div>
             <div class="mod-stats">
-                <div class="mod-stat-pill"><i class='bx bx-box' style="color:#34d399;"></i><b><?= $stats['assets'] ?></b> รายการ</div>
-                <div class="mod-stat-pill"><i class='bx bx-check-circle' style="color:#34d399;"></i><b><?= $stats['avail'] ?></b> พร้อมใช้</div>
+                <div class="mod-stat-pill"><i class='bx bx-box' style="color:#34d399;"></i><b><?= $stats['assets'] ?></b> รวม</div>
+                <div class="mod-stat-pill"><i class='bx bx-check-circle' style="color:#34d399;"></i><b><?= $stats['avail'] ?></b> ใช้ได้</div>
                 <div class="mod-stat-pill"><i class='bx bx-user-check' style="color:#60a5fa;"></i><b><?= $stats['borrow'] ?></b> ยืม</div>
             </div>
             <a href="asset.php" class="mod-btn">

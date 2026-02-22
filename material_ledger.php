@@ -192,6 +192,9 @@ include 'frontend/includes/sidebar.php';
                         <th colspan="2" class="col-group-iss">จ่าย</th>
                         <th colspan="2" class="col-group-bal">คงเหลือ</th>
                         <th rowspan="2" style="width:120px;">หมายเหตุ</th>
+                        <?php if ($is_logged_in): ?>
+                        <th rowspan="2" style="width:70px;" class="text-center d-print-none"><i class='bx bx-cog'></i></th>
+                        <?php endif; ?>
                     </tr>
                     <tr>
                         <th style="width:80px;">รับ</th>
@@ -206,17 +209,22 @@ include 'frontend/includes/sidebar.php';
                 </thead>
                 <tbody>
                 <?php if (empty($transactions)): ?>
-                    <tr><td colspan="12" class="text-center text-muted py-4">ยังไม่มีประวัติการรับ/จ่าย วัสดุนี้</td></tr>
+                    <tr><td colspan="<?= $is_logged_in ? '13' : '12' ?>" class="text-center text-muted py-4">ยังไม่มีประวัติการรับ/จ่าย วัสดุนี้</td></tr>
                 <?php else: ?>
-                    <?php foreach ($transactions as $tx): 
+                    <?php 
+                        $th_months = ['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+                        foreach ($transactions as $tx): 
                         $isIn = $tx['type'] === 'in';
                         $isOut = $tx['type'] === 'out';
                         $docIn  = $isIn ? htmlspecialchars($tx['ref_doc']?:'-') : '';
                         $docOut = $isOut ? htmlspecialchars($tx['ref_doc']?:'-') : '';
                         $totalPrice = $tx['qty'] * $tx['unit_price'];
+                        
+                        $tx_ts = strtotime($tx['created_at']);
+                        $th_date_str = date('j', $tx_ts) . ' ' . $th_months[(int)date('n', $tx_ts)] . ' ' . (date('Y', $tx_ts) + 543);
                     ?>
                     <tr>
-                        <td class="text-muted"><?= date('d/m/Y', strtotime($tx['created_at'])) ?></td>
+                        <td class="text-muted"><?= $th_date_str ?></td>
                         <td class="text-start"><?= htmlspecialchars($tx['requester']) ?></td>
                         <td><?= $docIn ?></td>
                         <td><?= $docOut ?></td>
@@ -235,6 +243,20 @@ include 'frontend/includes/sidebar.php';
                         <td class="col-group-bal"><?= number_format($tx['balance_price'], 2) ?></td>
                         
                         <td class="text-muted text-start" style="font-size:12px;"><?= htmlspecialchars($tx['note']?:'') ?></td>
+                        
+                        <?php if ($is_logged_in): ?>
+                        <td class="text-center d-print-none">
+                            <div class="d-flex justify-content-center gap-1">
+                                <button class="btn btn-sm btn-outline-primary" style="border-radius: 6px; padding: 2px 8px;" 
+                                        onclick="openEditTxModal(<?= $tx['id'] ?>, '<?= $tx['type'] ?>', '<?= htmlspecialchars($tx['requester'], ENT_QUOTES) ?>', '<?= htmlspecialchars($tx['ref_doc'], ENT_QUOTES) ?>', <?= $tx['unit_price'] ?>, <?= $tx['qty'] ?>, '<?= date('Y-m-d', strtotime($tx['created_at'])) ?>', '<?= htmlspecialchars($tx['note'], ENT_QUOTES) ?>')" title="แก้ไขรายการ">
+                                    <i class='bx bx-edit'></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" style="border-radius: 6px; padding: 2px 8px;" onclick="deleteTx(<?= $tx['id'] ?>, <?= $material['id'] ?>)" title="ลบรายการ">
+                                    <i class='bx bx-trash'></i>
+                                </button>
+                            </div>
+                        </td>
+                        <?php endif; ?>
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
@@ -317,14 +339,32 @@ include 'frontend/includes/sidebar.php';
                     <input type="hidden" name="material_id" value="<?= $material['id'] ?>">
                     <input type="hidden" name="type" id="txType">
                     
+                    <!-- datalist ชื่อครู (ใช้ร่วมกันทั้งหน้า) -->
+                    <datalist id="teacher-list">
+                        <option value="น.ส.ณัฐนรี พื้นผา">
+                        <option value="นางดอกจาน แก้วพิกุล">
+                        <option value="น.ส.พิติยา ลาโสพันธ์">
+                        <option value="น.ส.รัญญภัสร์ จิตธนาชัยพงศ์">
+                        <option value="น.ส.รัตน์ดา เนียมมูล">
+                        <option value="น.ส.ศิรินันท์ พันธ์ทอง">
+                        <option value="นายสุชาติ คู่แก้ว">
+                        <option value="นายสุริยะ พรมตวง">
+                        <option value="นางอำนวย แก้วสง่า">
+                        <option value="น.ส.เนตรศิริ ชินชัย">
+                    </datalist>
                     <div class="mb-3">
                         <label class="form-label text-muted small fw-bold" id="txRequesterLabel">รับจาก / จ่ายให้</label>
-                        <input type="text" class="form-control" name="requester" required>
+                        <input type="text" class="form-control" name="requester" list="teacher-list" autocomplete="off" required>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-6">
                             <label class="form-label text-muted small fw-bold">เลขที่เอกสาร</label>
-                            <input type="text" class="form-control" name="ref_doc">
+                            <div class="input-group" id="refDocGroup">
+                                <input type="text" class="form-control" name="ref_doc" id="txRefDoc">
+                                <button type="button" class="btn btn-outline-secondary" id="btnRefreshDocNo" title="สร้างรหัสใหม่" style="display:none;">
+                                    <i class='bx bx-refresh'></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small fw-bold">ราคาต่อหน่วย (บาท)</label>
@@ -336,7 +376,8 @@ include 'frontend/includes/sidebar.php';
                         </div>
                         <div class="col-6">
                             <label class="form-label text-muted small fw-bold">วันที่</label>
-                            <input type="date" class="form-control" name="tx_date" value="<?= date('Y-m-d') ?>" required>
+                            <input type="text" class="form-control fp-date" value="<?= date('Y-m-d') ?>" required autocomplete="off">
+                            <input type="hidden" name="tx_date" id="tx_date_hidden" value="<?= date('Y-m-d') ?>">
                         </div>
                     </div>
                     <div class="mb-4">
@@ -351,11 +392,119 @@ include 'frontend/includes/sidebar.php';
 </div>
 <?php endif; ?>
 
+<!-- Edit Transaction Modal (Only if existing material) -->
+<?php if (!$is_new): ?>
+<div class="modal fade" id="editTxModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border:none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="editTxModalTitle"><i class='bx bx-edit text-primary me-2'></i>แก้ไขรายการเบิกจ่าย/รับเข้า</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-3">
+                <form id="editTxForm">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="tx_id" id="editTxId">
+                    <input type="hidden" name="material_id" value="<?= $material['id'] ?>">
+                    <input type="hidden" name="type" id="editTxType">
+                    
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-bold" id="editTxRequesterLabel">รับจาก / จ่ายให้</label>
+                        <input type="text" class="form-control" name="requester" id="editTxRequester" list="teacher-list" autocomplete="off" required>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">เลขที่เอกสาร</label>
+                            <input type="text" class="form-control" name="ref_doc" id="editTxRefDoc">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">ราคาต่อหน่วย (บาท)</label>
+                            <input type="number" step="0.01" min="0" class="form-control" name="unit_price" id="editTxUnitPrice" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">จำนวน</label>
+                            <input type="number" min="1" class="form-control" name="qty" id="editTxQty" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small fw-bold">วันที่</label>
+                            <input type="text" class="form-control fp-date" id="editTxDateDisplay" required autocomplete="off">
+                            <input type="hidden" name="tx_date" id="edit_tx_date_hidden">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label text-muted small fw-bold">หมายเหตุ</label>
+                        <input type="text" class="form-control" name="note" id="editTxNote">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100 fw-bold rounded-pill" style="height:44px;" id="editTxSubmitBtn">บันทึกการแก้ไข</button>
+                    <div class="text-center mt-2">
+                        <small class="text-muted"><i class='bx bx-info-circle'></i> ระบบจะคำนวณยอดคงเหลือใหม่ทั้งหมดอัตโนมัติ</small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="frontend/assets/js/asset.js"></script>
 
+<!-- Flatpickr Thai Buddhist Year for Date Input -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    function initFpThai(selector) {
+        document.querySelectorAll(selector).forEach(function(el) {
+            flatpickr(el, {
+                locale: 'th',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altFormat: 'd/m/Y',
+                allowInput: true,
+                onChange: function(selectedDates, dateStr, fp) {
+                    if (selectedDates.length) {
+                        const d = selectedDates[0];
+                        fp.altInput.value =
+                            String(d.getDate()).padStart(2,'0') + '/' +
+                            String(d.getMonth()+1).padStart(2,'0') + '/' +
+                            (d.getFullYear() + 543);
+                            
+                        // Sync to hidden input for backend submission (Y-m-d)
+                        const hiddenInput = document.getElementById('tx_date_hidden');
+                        if (hiddenInput) {
+                            hiddenInput.value = dateStr;
+                        }
+                    } else {
+                        const hiddenInput = document.getElementById('tx_date_hidden');
+                        if (hiddenInput) hiddenInput.value = '';
+                    }
+                }
+            });
+        });
+    }
+    
+    // Init on page load
+    initFpThai('.fp-date');
+    
+    // Re-init when modal opens (if needed)
+    const modalEl = document.getElementById('txModal');
+    if (modalEl) {
+        modalEl.addEventListener('shown.bs.modal', function () {
+            initFpThai('.fp-date');
+            
+            // Re-apply current date inside fp-date if it's empty
+            const dateInput = modalEl.querySelector('.fp-date');
+            if(dateInput && dateInput._flatpickr && !dateInput.value) {
+                 dateInput._flatpickr.setDate(new Date(), true);
+            }
+        });
+    }
+});
+
 // ---- Mobile Sidebar Toggle ----
 document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
@@ -409,6 +558,26 @@ document.getElementById('newMaterialForm').addEventListener('submit', function(e
 const txModal = new bootstrap.Modal(document.getElementById('txModal'));
 const maxQty = <?= $material['qty_in_stock'] ?>;
 
+function loadNextOutDocNo() {
+    const refDocInput = document.getElementById('txRefDoc');
+    refDocInput.value = 'กำลังโหลด...';
+    refDocInput.readOnly = true;
+    fetch('backend/get_next_out_doc.php')
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                refDocInput.value = data.doc_no;
+            } else {
+                refDocInput.value = '';
+                refDocInput.readOnly = false;
+            }
+        })
+        .catch(() => {
+            refDocInput.value = '';
+            refDocInput.readOnly = false;
+        });
+}
+
 function openTxModal(type) {
     document.getElementById('txForm').reset();
     document.getElementById('txType').value = type;
@@ -419,15 +588,28 @@ function openTxModal(type) {
     document.getElementById('txSubmitBtn').className = isOut ? "btn btn-danger w-100 fw-bold rounded-pill" : "btn btn-success w-100 fw-bold rounded-pill";
     document.getElementById('txRequesterLabel').textContent = isOut ? "จ่ายให้ (ชื่อผู้เบิก/แผนก)" : "รับจาก (ชื่อร้านค้า/ผู้ส่งมอบ)";
     
-    // If issue, limit max qty to current stock
+    const refDocInput = document.getElementById('txRefDoc');
+    const btnRefresh = document.getElementById('btnRefreshDocNo');
+
     if (isOut) {
+        // Auto-generate OUT-YYMM-XXX
+        btnRefresh.style.display = '';
+        loadNextOutDocNo();
         document.getElementById('txQty').setAttribute('max', maxQty);
     } else {
+        // Receiving: editable, no auto number
+        refDocInput.readOnly = false;
+        refDocInput.value = '';
+        btnRefresh.style.display = 'none';
         document.getElementById('txQty').removeAttribute('max');
     }
     
     txModal.show();
 }
+
+document.getElementById('btnRefreshDocNo').addEventListener('click', function() {
+    loadNextOutDocNo();
+});
 
 document.getElementById('txForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -501,6 +683,94 @@ document.getElementById('editMaterialForm').addEventListener('submit', function(
     });
 });
 <?php endif; ?>
+
+<?php if ($is_logged_in): ?>
+function deleteTx(txId, materialId) {
+    Swal.fire({
+        title: 'ยืนยันการลบรายการ?',
+        text: "คุณต้องการลบประวัติการรับ/จ่ายนี้ใช่หรือไม่ ระบบจะคำนวณยอดคงเหลือใหม่ทั้งหมด",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#95a5a6',
+        confirmButtonText: 'ลบรายการ',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const formData = new FormData();
+            formData.append('tx_id', txId);
+            formData.append('material_id', materialId);
+            
+            fetch('backend/delete_material_tx.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    Swal.fire({icon:'success', title:'ลบสำเร็จ!', showConfirmButton:false, timer:1500})
+                    .then(() => location.reload());
+                } else {
+                    Swal.fire({icon:'error', title:'เกิดข้อผิดพลาด', text:data.error});
+                }
+            }).catch(err => Swal.fire({icon:'error', title:'Error', text:err.message}));
+        }
+    });
+}
+
+function openEditTxModal(id, type, requester, refDoc, unitPrice, qty, dateStr, note) {
+    document.getElementById('editTxForm').reset();
+    document.getElementById('editTxId').value = id;
+    document.getElementById('editTxType').value = type;
+    document.getElementById('editTxRequester').value = requester;
+    document.getElementById('editTxRefDoc').value = refDoc;
+    document.getElementById('editTxUnitPrice').value = unitPrice;
+    document.getElementById('editTxQty').value = qty;
+    document.getElementById('editTxNote').value = note;
+    
+    // Set Flatpickr date explicitly
+    const dateInput = document.getElementById('editTxDateDisplay');
+    if (dateInput && dateInput._flatpickr) {
+        dateInput._flatpickr.setDate(dateStr, true);
+    }
+    
+    const isOut = type === 'out';
+    document.getElementById('editTxModalTitle').innerHTML = isOut ? "<i class='bx bx-edit text-danger me-2'></i>แก้ไขรายการเบิกจ่าย" : "<i class='bx bx-edit text-success me-2'></i>แก้ไขรายการรับเข้า";
+    document.getElementById('editTxRequesterLabel').textContent = isOut ? "จ่ายให้ (ชื่อผู้เบิก/แผนก)" : "รับจาก (ชื่อร้านค้า/ผู้ส่งมอบ)";
+    
+    new bootstrap.Modal(document.getElementById('editTxModal')).show();
+}
+
+document.getElementById('editTxForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const btn = document.getElementById('editTxSubmitBtn');
+    const oldText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>บันทึก...';
+    
+    fetch('backend/edit_material_tx.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.ok) {
+            Swal.fire({icon:'success', title:'แก้ไขสำเร็จ', showConfirmButton:false, timer:1500})
+            .then(() => location.reload());
+        } else {
+            Swal.fire({icon:'error', title:'Error', text:data.error});
+            btn.disabled = false;
+            btn.innerHTML = oldText;
+        }
+    }).catch(err => {
+        Swal.fire({icon:'error', title:'Error', text:err.message});
+        btn.disabled = false;
+        btn.innerHTML = oldText;
+    });
+});
+<?php endif; ?>
+
 </script>
 
 <?php include 'frontend/includes/footer.php'; ?>

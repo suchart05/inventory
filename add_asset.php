@@ -416,12 +416,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     });
 
     function onCategoryChange() {
-        const sel  = document.getElementById('assetCategorySelect');
-        const opt  = sel.options[sel.selectedIndex];
-        const age  = opt.dataset.age;
-        const rate = opt.dataset.rate;
-        const ageEl  = document.getElementById('assetAgeInput');
-        const rateEl = document.getElementById('assetRateInput');
+        // Map category_code to specific registry prefix
+        const categoryPrefixMap = {
+            '01': 'คว01/', // สำนักงาน
+            '02': 'คว02/', // การศึกษา
+            '03': 'คว03/', // ยานพาหนะ
+            '04': 'คว04/', // คอมพิวเตอร์
+            '05': 'คว05/', 
+            '06': 'คว06/', // ก่อสร้าง
+            '07': 'คว07/', // ไฟฟ้าและวิทยุ
+            '08': 'คว08/', // โฆษณาและเผยแพร่
+            '09': 'คว09/', // วิทยาศาสตร์
+            '10': 'คว10/', // การแพทย์
+            '11': 'คว11/', // งานบ้านงานครัว
+            '12': 'คว12/', // กีฬา
+            '13': 'คว13/', // ดนตรี/นาฏศิลป์
+            '14': 'คว14/', // สนาม
+            '15': 'คว15/', // สิ่งปลูกสร้าง (ถาวร)
+            '16': 'คว16/', // สิ่งปลูกสร้าง (ชั่วคราว)
+            '17': 'คว17/'  // ต่ำกว่าเกณฑ์
+        };
+
+        const sel   = document.getElementById('assetCategorySelect');
+        const opt   = sel.options[sel.selectedIndex];
+        const catId = sel.value;
+        const age   = opt.dataset.age;
+        const rate  = opt.dataset.rate;
+        const ageEl = document.getElementById('assetAgeInput');
+        const rateEl= document.getElementById('assetRateInput');
+        
+        // Handle Auto-Prefix
+        const codeInput = document.querySelector('input[name="asset_code"]');
+        if (catId && categoryPrefixMap[catId]) {
+            // Only overwrite if it's empty or currently matches an old prefix
+            let currentVal = codeInput.value.trim();
+            let isOldPrefix = Object.values(categoryPrefixMap).some(p => currentVal === p || currentVal.startsWith(p));
+            if (!currentVal || isOldPrefix) {
+                // Keep the suffix if it exists (e.g., changes from คว01/05/2569 -> คว02/05/2569)
+                let suffix = '';
+                if (isOldPrefix && currentVal.includes('/')) {
+                   let parts = currentVal.split('/');
+                   parts.shift(); // remove prefix
+                   suffix = parts.join('/');
+                }
+                
+                codeInput.value = categoryPrefixMap[catId] + suffix;
+                // Focus at the end of input
+                setTimeout(() => { codeInput.focus(); codeInput.setSelectionRange(codeInput.value.length, codeInput.value.length); }, 10);
+            }
+        }
+
         if (age  && age  !== 'null') { ageEl.value  = age;  ageEl.style.color = '#4e54c8'; } else { ageEl.value = ''; }
         if (rate && rate !== 'null') { rateEl.value = rate; rateEl.style.color = '#4e54c8'; } else { rateEl.value = ''; }
     }

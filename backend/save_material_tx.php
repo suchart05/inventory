@@ -1,4 +1,6 @@
 <?php
+error_reporting(0);
+ini_set('display_errors', 0);
 if (session_status() === PHP_SESSION_NONE) session_start();
 require_once __DIR__ . '/config/db_inventory.php';
 
@@ -15,7 +17,18 @@ $requester   = trim($_POST['requester'] ?? '');
 $ref_doc     = trim($_POST['ref_doc'] ?? '');
 $unit_price  = floatval($_POST['unit_price'] ?? 0);
 $qty         = intval($_POST['qty'] ?? 0);
-$tx_date     = $_POST['tx_date'] ?? date('Y-m-d');
+$tx_date     = trim($_POST['tx_date'] ?? '');
+if (empty($tx_date)) {
+    $tx_date = date('Y-m-d');
+} else {
+    // If date contains a year > 2500, it's likely Thai year (e.g. 2569-02-22)
+    $parts = explode('-', $tx_date);
+    if (count($parts) === 3 && intval($parts[0]) > 2500) {
+        $parts[0] = intval($parts[0]) - 543;
+        $tx_date = sprintf("%04d-%02d-%02d", $parts[0], $parts[1], $parts[2]);
+    }
+}
+
 $note        = trim($_POST['note'] ?? '');
 
 if ($material_id <= 0 || !in_array($type, ['in', 'out']) || empty($requester) || $qty <= 0) {
@@ -50,17 +63,21 @@ if ($type === 'in') {
 }
 
 // Insert transaction
-$ok = inv_exec(
-    "INSERT INTO material_transactions 
-     (material_id, type, qty, ref_doc, requester, note, created_at, unit_price, balance_qty, balance_price)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-    [$material_id, $type, $qty, $ref_doc, $requester, $note, $tx_date . ' ' . date('H:i:s'), $unit_price, $bal_qty, $bal_price]
-);
+try {
+    $ok = inv_exec(
+        "INSERT INTO material_transactions 
+         (material_id, type, qty, ref_doc, requester, note, created_at, unit_price, balance_qty, balance_price)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        [$material_id, $type, $qty, $ref_doc, $requester, $note, $tx_date . ' ' . date('H:i:s'), $unit_price, $bal_qty, $bal_price]
+    );
 
-if ($ok) {
-    // Update material summary
-    inv_exec("UPDATE materials SET qty_in_stock = ?, unit_cost = ? WHERE id = ?", [$bal_qty, $unit_price, $material_id]);
-    echo json_encode(['ok' => true]);
-} else {
-    echo json_encode(['ok' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึกฐานข้อมูล']);
+    if ($ok) {
+        // Update material summary
+        inv_exec("UPDATE materials SET qty_in_stock = ?, unit_cost = ? WHERE id = ?", [$bal_qty, $unit_price, $material_id]);
+        echo json_encode(['ok' => true]);
+    } else {
+        echo json_encode(['ok' => false, 'error' => 'เกิดข้อผิดพลาดในการบันทึกฐานข้อมูล']);
+    }
+} catch (Exception $e) {
+    echo json_encode(['ok' => false, 'error' => 'DB Error: ' . $e->getMessage()]);
 }

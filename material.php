@@ -29,7 +29,17 @@ if (!empty($_GET['status'])) {
 }
 
 $where  = $whereParts ? 'WHERE ' . implode(' AND ', $whereParts) : '';
-$materials = inv_query("SELECT * FROM materials $where ORDER BY name ASC LIMIT 100", $params);
+
+// Pagination Logic
+$items_per_page = 10;
+$current_page = max(1, intval($_GET['page'] ?? 1));
+$offset = ($current_page - 1) * $items_per_page;
+
+$total_rows_query = inv_row("SELECT COUNT(*) AS total FROM materials $where", $params);
+$total_rows_filtered = $total_rows_query['total'] ?? 0;
+$total_pages = ceil($total_rows_filtered / $items_per_page);
+
+$materials = inv_query("SELECT * FROM materials $where ORDER BY name ASC LIMIT $items_per_page OFFSET $offset", $params);
 ?>
 <style>
 /* --- Modern UI Styles --- */
@@ -198,7 +208,13 @@ $materials = inv_query("SELECT * FROM materials $where ORDER BY name ASC LIMIT 1
                     <li class="nav-item"><a class="nav-link <?= ($_GET['status']??'')==='low' ?'active':'' ?>" href="material.php?status=low">ใกล้หมด (<?= $stats['low_stock'] ?? 0 ?>)</a></li>
                     <li class="nav-item"><a class="nav-link <?= ($_GET['status']??'')==='out' ?'active':'' ?>" href="material.php?status=out">หมดสต็อก (<?= $stats['out_of_stock'] ?? 0 ?>)</a></li>
                 </ul>
-                
+                <div class="mb-2">
+                    <a href="print_material_slip.php" target="_blank"
+                       class="btn fw-bold px-3 rounded-pill"
+                       style="height:36px; background:linear-gradient(135deg,#11998e,#38ef7d); border:none; color:#fff; font-size:13px; display:flex; align-items:center; gap:5px; box-shadow:0 3px 8px rgba(17,153,142,0.2); white-space:nowrap;">
+                        <i class='bx bx-printer' style="font-size:16px;"></i> พิมพ์ใบเบิกพัสดุ
+                    </a>
+                </div>
                 <form method="GET" action="material.php" class="mb-2">
                     <div class="input-group" style="width: 250px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-radius: 20px; overflow:hidden;">
                         <input type="text" name="search" class="form-control border-0" placeholder="ค้นหาชื่อ/รหัส..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
@@ -258,6 +274,56 @@ $materials = inv_query("SELECT * FROM materials $where ORDER BY name ASC LIMIT 1
                         <?php endif; ?>
                         </tbody>
                     </table>
+                </div>
+
+                <?php if ($total_pages > 1): ?>
+                <!-- Pagination UI -->
+                <nav aria-label="Page navigation" class="mt-4 pb-2">
+                    <ul class="pagination justify-content-center">
+                        <?php
+                        $qs = $_GET; // preserve existing filters
+                        if ($current_page > 1):
+                            $qs['page'] = $current_page - 1;
+                        ?>
+                            <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 8px 0 0 8px;">ก่อนหน้า</a></li>
+                        <?php endif; ?>
+                        
+                        <?php 
+                        $start_page = max(1, $current_page - 2);
+                        $end_page = min($total_pages, $current_page + 2);
+                        
+                        if ($start_page > 1) {
+                            $qs['page'] = 1;
+                            echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">1</a></li>';
+                            if ($start_page > 2) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                        }
+                        
+                        for ($i = $start_page; $i <= $end_page; $i++): 
+                            $qs['page'] = $i;
+                            $active = ($i === $current_page) ? 'active' : '';
+                            $styles = ($active) ? 'background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; border:none;' : '';
+                        ?>
+                            <li class="page-item <?= $active ?>"><a class="page-link shadow-sm fw-bold" href="?<?= http_build_query($qs) ?>" style="<?= $styles ?>"><?= $i ?></a></li>
+                        <?php endfor; ?>
+                        
+                        <?php 
+                        if ($end_page < $total_pages) {
+                            if ($end_page < $total_pages - 1) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                            $qs['page'] = $total_pages;
+                            echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">'.$total_pages.'</a></li>';
+                        }
+                        
+                        if ($current_page < $total_pages):
+                            $qs['page'] = $current_page + 1;
+                        ?>
+                            <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 0 8px 8px 0;">ถัดไป</a></li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+                <?php endif; ?>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 px-1 pb-2">
+                    <small class="text-muted">แสดงทั้งหมด <?= $total_rows_filtered ?> รายการ</small>
                 </div>
             </div>
         </div>

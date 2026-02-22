@@ -24,7 +24,17 @@ if (!empty($_GET['status'])) {
     $params[] = $_GET['status'];
 }
 $where  = $whereParts ? 'WHERE ' . implode(' AND ', $whereParts) : '';
-$assets = inv_query("SELECT a.*, ac.name AS cat_name FROM assets a LEFT JOIN asset_categories ac ON a.category_code=ac.code $where ORDER BY a.id DESC LIMIT 100", $params);
+
+// Pagination Logic
+$items_per_page = 15;
+$current_page = max(1, intval($_GET['page'] ?? 1));
+$offset = ($current_page - 1) * $items_per_page;
+
+$total_rows_query = inv_row("SELECT COUNT(*) AS total FROM assets a LEFT JOIN asset_categories ac ON a.category_code=ac.code $where", $params);
+$total_rows_filtered = $total_rows_query['total'] ?? 0;
+$total_pages = ceil($total_rows_filtered / $items_per_page);
+
+$assets = inv_query("SELECT a.*, ac.name AS cat_name FROM assets a LEFT JOIN asset_categories ac ON a.category_code=ac.code $where ORDER BY a.id DESC LIMIT $items_per_page OFFSET $offset", $params);
 
 // ---- Categories for filter ----
 $categories = inv_query("SELECT code, name FROM asset_categories ORDER BY code");
@@ -294,8 +304,55 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
                         </tbody>
                     </table>
                 </div>
+
+                <?php if ($total_pages > 1): ?>
+                <!-- Pagination UI -->
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        <?php
+                        $qs = $_GET; // preserve existing filters
+                        if ($current_page > 1):
+                            $qs['page'] = $current_page - 1;
+                        ?>
+                            <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 8px 0 0 8px;">ก่อนหน้า</a></li>
+                        <?php endif; ?>
+                        
+                        <?php 
+                        $start_page = max(1, $current_page - 2);
+                        $end_page = min($total_pages, $current_page + 2);
+                        
+                        if ($start_page > 1) {
+                            $qs['page'] = 1;
+                            echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">1</a></li>';
+                            if ($start_page > 2) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                        }
+                        
+                        for ($i = $start_page; $i <= $end_page; $i++): 
+                            $qs['page'] = $i;
+                            $active = ($i === $current_page) ? 'active' : '';
+                            $styles = ($active) ? 'background: linear-gradient(135deg, #11998e, #38ef7d); color: #fff; border:none;' : '';
+                        ?>
+                            <li class="page-item <?= $active ?>"><a class="page-link shadow-sm fw-bold" href="?<?= http_build_query($qs) ?>" style="<?= $styles ?>"><?= $i ?></a></li>
+                        <?php endfor; ?>
+                        
+                        <?php 
+                        if ($end_page < $total_pages) {
+                            if ($end_page < $total_pages - 1) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                            $qs['page'] = $total_pages;
+                            echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">'.$total_pages.'</a></li>';
+                        }
+                        
+                        if ($current_page < $total_pages):
+                            $qs['page'] = $current_page + 1;
+                        ?>
+                            <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 0 8px 8px 0;">ถัดไป</a></li>
+                        <?php endif; ?>
+                    </ul>
+                </nav>
+                <?php endif; ?>
+
                 <div class="d-flex justify-content-between align-items-center mt-3 px-1">
-                    <small class="text-muted">แสดง <?= count($assets) ?> รายการ</small>
+                    <small class="text-muted">แสดงทั้งหมด <?= $total_rows_filtered ?> รายการ</small>
                 </div>
             </div>
         </div>

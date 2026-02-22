@@ -2,6 +2,16 @@
 if (session_status() === PHP_SESSION_NONE) session_start();
 $is_logged_in = isset($_SESSION['inv_user_id']);
 require_once __DIR__ . '/backend/config/db_inventory.php';
+
+// ---- Handle DELETE ----
+if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
+    $del_id = intval($_POST['order_id'] ?? 0);
+    if ($del_id) {
+        inv_exec("DELETE FROM procurement_orders WHERE id=?", [$del_id]);
+    }
+    header('Location: procurement.php'); exit;
+}
+
 include 'frontend/includes/header.php';
 include 'frontend/includes/sidebar.php';
 
@@ -43,15 +53,6 @@ $procMethodLabel = [
     'donation'    => 'รับบริจาค',
 ];
 
-// ---- Handle DELETE ----
-if ($is_logged_in && $_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'delete') {
-    $del_id = intval($_POST['order_id'] ?? 0);
-    if ($del_id) {
-        inv_exec("DELETE FROM procurement_orders WHERE id=?", [$del_id]);
-    }
-    header('Location: procurement.php'); exit;
-}
-
 // ---- Fiscal Year filter ----
 $current_year = (int)date('Y') + 543;
 $fiscal_year  = isset($_GET['fiscal_year']) ? intval($_GET['fiscal_year']) : $current_year;
@@ -80,7 +81,16 @@ if ($search) {
 }
 $where = 'WHERE ' . implode(' AND ', $whereParts);
 
-$orders = inv_query("SELECT * FROM procurement_orders $where ORDER BY id DESC LIMIT 200", $params);
+// Pagination Logic
+$items_per_page = 15;
+$current_page = max(1, intval($_GET['page'] ?? 1));
+$offset = ($current_page - 1) * $items_per_page;
+
+$total_rows_query = inv_row("SELECT COUNT(*) AS total FROM procurement_orders $where", $params);
+$total_rows = $total_rows_query['total'] ?? 0;
+$total_pages = ceil($total_rows / $items_per_page);
+
+$orders = inv_query("SELECT * FROM procurement_orders $where ORDER BY id DESC LIMIT $items_per_page OFFSET $offset", $params);
 
 // ---- Available fiscal years for dropdown ----
 $years = inv_query("SELECT DISTINCT fiscal_year FROM procurement_orders ORDER BY fiscal_year DESC");
@@ -379,6 +389,54 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                     </tbody>
                 </table>
             </div>
+
+            <?php if ($total_pages > 1): ?>
+            <!-- Pagination UI -->
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <?php
+                    $qs = $_GET; // preserve existing filters
+                    if ($current_page > 1):
+                        $qs['page'] = $current_page - 1;
+                    ?>
+                        <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 8px 0 0 8px;">ก่อนหน้า</a></li>
+                    <?php endif; ?>
+                    
+                    <?php 
+                    // To avoid too many links, let's limit page display if needed, or just show all for now
+                    $start_page = max(1, $current_page - 2);
+                    $end_page = min($total_pages, $current_page + 2);
+                    
+                    if ($start_page > 1) {
+                        $qs['page'] = 1;
+                        echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">1</a></li>';
+                        if ($start_page > 2) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                    }
+                    
+                    for ($i = $start_page; $i <= $end_page; $i++): 
+                        $qs['page'] = $i;
+                        $active = ($i === $current_page) ? 'active' : '';
+                        $styles = ($active) ? 'background: linear-gradient(135deg, #4e54c8, #8f94fb); color: #fff; border:none;' : '';
+                    ?>
+                        <li class="page-item <?= $active ?>"><a class="page-link shadow-sm fw-bold" href="?<?= http_build_query($qs) ?>" style="<?= $styles ?>"><?= $i ?></a></li>
+                    <?php endfor; ?>
+                    
+                    <?php 
+                    if ($end_page < $total_pages) {
+                        if ($end_page < $total_pages - 1) echo '<li class="page-item disabled"><span class="page-link border-0">...</span></li>';
+                        $qs['page'] = $total_pages;
+                        echo '<li class="page-item"><a class="page-link shadow-sm" href="?'.http_build_query($qs).'">'.$total_pages.'</a></li>';
+                    }
+                    
+                    if ($current_page < $total_pages):
+                        $qs['page'] = $current_page + 1;
+                    ?>
+                        <li class="page-item"><a class="page-link shadow-sm" href="?<?= http_build_query($qs) ?>" style="border-radius: 0 8px 8px 0;">ถัดไป</a></li>
+                    <?php endif; ?>
+                </ul>
+            </nav>
+            <?php endif; ?>
+
         </div><!-- end table-container -->
 
     </div><!-- end main-content -->

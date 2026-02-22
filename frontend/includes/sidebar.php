@@ -5,13 +5,13 @@
     </div>
     <!-- User Badge -->
     <div style="padding:10px 18px 0; margin-bottom:4px;">
-        <div style="background:rgba(255,255,255,0.08); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px;">
-            <i class='bx bx-user-circle' style="font-size:26px; color:#a0f0e0; flex-shrink:0;"></i>
+        <div style="background:rgba(78, 84, 200, 0.08); border-radius:10px; padding:10px 12px; display:flex; align-items:center; gap:10px;">
+            <i class='bx bx-user-circle' style="font-size:26px; color:#4e54c8; flex-shrink:0;"></i>
             <div style="overflow:hidden;">
-                <div style="font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                <div style="font-size:13px; font-weight:700; color:#495057; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                     <?= htmlspecialchars($_SESSION['inv_fullname'] ?? 'ผู้ใช้') ?>
                 </div>
-                <div style="font-size:11px; color:rgba(255,255,255,0.45);">
+                <div style="font-size:11px; font-weight:500; color:#6c757d;">
                     <?= htmlspecialchars($_SESSION['inv_role'] ?? '') ?>
                 </div>
             </div>
@@ -51,11 +51,20 @@
             </a>
         </li>
         <?php endif; ?>
+        <?php if (isset($_SESSION['inv_user_id'])): ?>
         <li class="log_out">
             <a href="logout.php">
                 <i class='bx bx-log-out'></i>
                 <span class="links_name">ออกจากระบบ</span>
             </a>
         </li>
+        <?php else: ?>
+        <li class="log_out">
+            <a href="login.php">
+                <i class='bx bx-log-in'></i>
+                <span class="links_name">เข้าสู่ระบบ</span>
+            </a>
+        </li>
+        <?php endif; ?>
     </ul>
 </div>
