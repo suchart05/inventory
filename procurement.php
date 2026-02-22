@@ -9,19 +9,26 @@ include 'frontend/includes/sidebar.php';
 $moneyGroupLabel = [
     'operation'  => 'งบดำเนินงาน',
     'salary'     => 'จ้างเหมา/เงินเดือน',
+    'investment' => 'ลงทุน/ซ่อมแซม',
+    'support'    => 'งบสนับสนุน',
+    // Legacy groups for backward compatibility
     'special'    => 'โครงการพิเศษ',
     'income'     => 'รายได้สถานศึกษา',
     'subsidy'    => 'อุดหนุน อปท.',
-    'investment' => 'ลงทุน/ซ่อมแซม',
 ];
 $moneyGroupColor = [
     'operation'  => '#4e73df',
     'salary'     => '#6f42c1',
+    'investment' => '#795548',
+    'support'    => '#ff9800',
+    // Legacy colors
     'special'    => '#f39c12',
     'income'     => '#27ae60',
     'subsidy'    => '#e74c3c',
-    'investment' => '#795548',
 ];
+
+// Options allowed to be selected in Add/Edit form
+$activeMoneyGroups = ['operation', 'salary', 'investment', 'support'];
 $statusLabel = [
     'pending'   => ['text' => 'รอดำเนินการ', 'class' => 'bg-secondary text-white'],
     'approved'  => ['text' => 'อนุมัติแล้ว',  'class' => 'badge-inuse'],
@@ -73,7 +80,7 @@ if ($search) {
 }
 $where = 'WHERE ' . implode(' AND ', $whereParts);
 
-$orders = inv_query("SELECT * FROM procurement_orders $where ORDER BY order_date DESC, id DESC LIMIT 200", $params);
+$orders = inv_query("SELECT * FROM procurement_orders $where ORDER BY id DESC LIMIT 200", $params);
 
 // ---- Available fiscal years for dropdown ----
 $years = inv_query("SELECT DISTINCT fiscal_year FROM procurement_orders ORDER BY fiscal_year DESC");
@@ -81,15 +88,73 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
 ?>
 <link rel="stylesheet" href="frontend/assets/css/asset.css">
 <style>
-.stat-card  { border-radius:14px; padding:18px 20px; color:#fff; display:flex; flex-direction:column; justify-content:space-between; min-height:90px; }
-.table-container { background:#fff; border-radius:16px; box-shadow:0 2px 12px rgba(0,0,0,0.07); padding:24px; }
-.badge-status { padding:3px 12px; border-radius:20px; font-size:12px; font-weight:600; display:inline-block; }
-.proc-tabs .nav-link { font-size:14px; font-weight:600; border:none; padding:8px 20px; border-radius:8px 8px 0 0; }
-.proc-tabs .nav-link.active { background:#4e54c8; color:#fff; }
-.proc-tabs .nav-link:not(.active) { color:#666; }
-.search-wrap { position:relative; }
-.search-wrap .bx { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:#aaa; font-size:18px; }
-.search-wrap input { padding-left:36px; }
+.stat-card {
+    border-radius: 20px;
+    padding: 24px;
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+.stat-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 150px;
+    height: 150px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.table-container { 
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px; 
+    box-shadow: 0 8px 32px rgba(31, 38, 135, 0.07); 
+    padding: 24px; 
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    transition: all 0.3s ease;
+}
+.table-hover tbody tr { transition: all 0.2s ease; }
+.table-hover tbody tr:hover { 
+    background-color: #f8faff !important; 
+    transform: scale(1.002);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    z-index: 10;
+    position: relative;
+}
+.badge-status { padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; display: inline-block; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.proc-tabs .nav-link { font-size: 15px; font-weight: 600; border: none; padding: 12px 24px; border-radius: 12px 12px 0 0; transition: all 0.3s ease; position: relative; overflow: hidden; }
+.proc-tabs .nav-link.active { background: linear-gradient(135deg, #4e54c8, #8f94fb); color: #fff; box-shadow: 0 -4px 15px rgba(78, 84, 200, 0.2); }
+.proc-tabs .nav-link:not(.active) { color: #888; background: #f8f9fa; }
+.proc-tabs .nav-link:not(.active):hover { color: #4e54c8; background: #eef0ff; }
+.search-wrap { position: relative; }
+.search-wrap .bx { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #8f94fb; font-size: 20px; transition: all 0.3s ease; }
+.search-wrap input { padding-left: 45px; border-radius: 30px; border: 2px solid #eef0ff; padding-top: 10px; padding-bottom: 10px; transition: all 0.3s ease; background: #fdfdff; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02); }
+.search-wrap input:focus { border-color: #8f94fb; box-shadow: 0 0 0 4px rgba(143, 148, 251, 0.15); background: #fff; }
+.search-wrap input:focus + .bx { color: #4e54c8; transform: translateY(-50%) scale(1.1); }
+.btn-action { transition: all 0.2s; border-radius: 10px; padding: 6px 10px; }
+.btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+.table-responsive { overflow-x: auto; border-radius: 12px; border: 1px solid #edf2f9; }
+.table th { background-color: #f8faff !important; color: #4e54c8; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; border-bottom: 2px solid #eef0ff; }
+.page-title-gradient { background: linear-gradient(135deg, #4e54c8, #8f94fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.money-group-card { transition: all 0.3s ease; border-radius: 20px; padding: 20px; border: 1px solid rgba(0,0,0,0.05); background: linear-gradient(to right bottom, #ffffff, #fcfcff); }
+.money-group-card:hover { box-shadow: 0 10px 25px rgba(0,0,0,0.08); transform: translateY(-5px); }
+.money-group-item { padding: 8px 12px; border-radius: 8px; transition: background 0.2s; margin-bottom: 6px; }
+.money-group-item:hover { background: rgba(0,0,0,0.03); }
+.action-buttons .btn { border-radius: 30px; font-weight: 600; padding: 8px 20px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.action-buttons .btn:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,0,0,0.15); }
+.action-buttons .btn:active { transform: translateY(0); }
 </style>
 
 <section class="home-section">
@@ -120,15 +185,15 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
         <!-- ===== Header Row: Year + Buttons ===== -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
-                <h5 class="fw-bold mb-0">ทะเบียนคุมการจัดซื้อจัดจ้าง</h5>
-                <small class="text-muted">โรงเรียนบ้านโคกวิทยา</small>
+                <h5 class="fw-bold mb-0 page-title-gradient" style="font-size: 26px;">ทะเบียนคุมการจัดซื้อจัดจ้าง</h5>
+                <small class="text-muted" style="letter-spacing: 0.5px;">โรงเรียนบ้านโคกวิทยา</small>
             </div>
-            <div class="d-flex gap-2 align-items-center">
+            <div class="action-buttons d-flex gap-2 align-items-center">
                 <!-- Fiscal Year Filter -->
-                <form method="GET" class="d-flex align-items-center gap-2">
+                <form method="GET" class="d-flex align-items-center gap-2 me-2 p-2" style="background: rgba(255,255,255,0.7); border-radius: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.03);">
                     <input type="hidden" name="tab" value="<?= htmlspecialchars($tab) ?>">
-                    <label class="mb-0 fw-bold text-muted" style="font-size:13px;"><i class='bx bx-calendar me-1'></i>ปีงบ:</label>
-                    <select name="fiscal_year" class="form-select form-select-sm" style="width:90px;" onchange="this.form.submit()">
+                    <label class="mb-0 fw-bold text-primary ms-2" style="font-size:14px;"><i class='bx bx-calendar me-1'></i>ปีงบ:</label>
+                    <select name="fiscal_year" class="form-select border-0 bg-transparent fw-bold text-dark" style="width:100px; outline:none; box-shadow:none; cursor:pointer;" onchange="this.form.submit()">
                         <?php foreach ($years as $y): ?>
                         <option value="<?= $y['fiscal_year'] ?>" <?= $y['fiscal_year'] == $fiscal_year ? 'selected' : '' ?>><?= $y['fiscal_year'] ?></option>
                         <?php endforeach; ?>
@@ -138,14 +203,14 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                     </select>
                 </form>
                 <a href="print_procurement.php?fiscal_year=<?= $fiscal_year ?>&order_type=<?= $tab ?>"
-                   target="_blank" class="btn btn-outline-secondary rounded-pill px-4 fw-medium" style="font-size:14px;">
+                   target="_blank" class="btn btn-outline-secondary">
                     <i class='bx bx-printer me-1'></i>พิมพ์รายงาน
                 </a>
                 <?php if ($is_logged_in): ?>
-                <a href="import_procurement.php" class="btn btn-outline-primary rounded-pill px-4 fw-medium" style="font-size:14px;">
+                <a href="import_procurement.php" class="btn btn-outline-primary">
                     <i class='bx bx-import me-1'></i>นำเข้า CSV
                 </a>
-                <button class="btn btn-success rounded-pill px-4 fw-medium" style="font-size:14px;"
+                <button class="btn btn-primary" style="background: linear-gradient(135deg, #11998e, #38ef7d); border: none;"
                         onclick="openAddModal()">
                     <i class='bx bx-plus me-1'></i>เพิ่มรายการ
                 </button>
@@ -156,42 +221,57 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
         <!-- ===== Summary Cards ===== -->
         <div class="row g-3 mb-4">
             <div class="col-md-3">
-                <div class="stat-card" style="background:linear-gradient(135deg,#4e54c8,#8f94fb);">
-                    <small style="opacity:.8;">รวมทั้งหมด</small>
-                    <div>
-                        <div class="fw-bold" style="font-size:22px;">฿<?= number_format($grand_total, 2) ?></div>
-                        <small><?= (($total_buy['c'] ?? 0) + ($total_hire['c'] ?? 0)) ?> รายการ</small>
+                <div class="stat-card shadow-sm" style="background:linear-gradient(135deg,#4e54c8,#8f94fb);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small style="opacity:0.85; font-size: 14px; letter-spacing: 0.5px; font-weight: 600;">รวมทั้งหมด</small>
+                        <i class='bx bx-wallet' style="font-size: 24px; opacity: 0.8;"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div class="fw-bold" style="font-size:28px; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">฿<?= number_format($grand_total, 2) ?></div>
+                        <small style="opacity:0.9; font-weight: 500;"><i class='bx bx-list-ul me-1'></i><?= (($total_buy['c'] ?? 0) + ($total_hire['c'] ?? 0)) ?> รายการ</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card" style="background:linear-gradient(135deg,#11998e,#38ef7d);">
-                    <small style="opacity:.8;">จัดซื้อ</small>
-                    <div>
-                        <div class="fw-bold" style="font-size:22px;">฿<?= number_format($total_buy['t'] ?? 0, 2) ?></div>
-                        <small><?= $total_buy['c'] ?? 0 ?> รายการ</small>
+                <div class="stat-card shadow-sm" style="background:linear-gradient(135deg,#11998e,#38ef7d);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small style="opacity:0.85; font-size: 14px; letter-spacing: 0.5px; font-weight: 600;">จัดซื้อ</small>
+                        <i class='bx bx-cart' style="font-size: 24px; opacity: 0.8;"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div class="fw-bold" style="font-size:28px; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">฿<?= number_format($total_buy['t'] ?? 0, 2) ?></div>
+                        <small style="opacity:0.9; font-weight: 500;"><i class='bx bx-list-ul me-1'></i><?= $total_buy['c'] ?? 0 ?> รายการ</small>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="stat-card" style="background:linear-gradient(135deg,#f7971e,#ffd200);">
-                    <small style="color:#333;opacity:.8;">จัดจ้าง</small>
-                    <div>
-                        <div class="fw-bold" style="font-size:22px;color:#333;">฿<?= number_format($total_hire['t'] ?? 0, 2) ?></div>
-                        <small style="color:#333;"><?= $total_hire['c'] ?? 0 ?> รายการ</small>
+                <div class="stat-card shadow-sm" style="background:linear-gradient(135deg,#ff9966,#ff5e62);">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small style="opacity:0.85; font-size: 14px; letter-spacing: 0.5px; font-weight: 600;">จัดจ้าง</small>
+                        <i class='bx bx-wrench' style="font-size: 24px; opacity: 0.8;"></i>
+                    </div>
+                    <div class="mt-3">
+                        <div class="fw-bold" style="font-size:28px; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">฿<?= number_format($total_hire['t'] ?? 0, 2) ?></div>
+                        <small style="opacity:0.9; font-weight: 500;"><i class='bx bx-list-ul me-1'></i><?= $total_hire['c'] ?? 0 ?> รายการ</small>
                     </div>
                 </div>
             </div>
             <!-- Money Groups -->
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm h-100" style="border-radius:14px;padding:14px 18px;">
-                    <small class="fw-bold text-muted mb-2"><i class='bx bx-layer me-1'></i>แยกตามกลุ่มเงิน</small>
-                    <?php foreach ($stats as $group => $total): ?>
-                    <div class="d-flex justify-content-between" style="font-size:12px;margin-bottom:4px;">
-                        <span style="color:<?= $moneyGroupColor[$group] ?? '#aaa' ?>;">● <?= $moneyGroupLabel[$group] ?? $group ?></span>
-                        <span class="fw-bold">฿<?= number_format($total, 0) ?></span>
+                <div class="card border-0 h-100 money-group-card">
+                    <div class="d-flex align-items-center mb-3 pb-2" style="border-bottom: 1px dashed #eee;">
+                        <i class='bx bx-layer fs-5 text-primary me-2'></i>
+                        <small class="fw-bold text-dark mb-0 fs-6">แยกตามกลุ่มเงิน</small>
                     </div>
-                    <?php endforeach; ?>
+                    <div class="overflow-hidden" style="padding-right: 5px;">
+                        <?php foreach ($stats as $group => $total): ?>
+                        <div class="d-flex justify-content-between align-items-center money-group-item">
+                            <span style="color:<?= $moneyGroupColor[$group] ?? '#aaa' ?>; font-size: 13px; font-weight: 600;">
+                                <i class='bx bxs-circle me-1' style="font-size: 10px;"></i><?= $moneyGroupLabel[$group] ?? $group ?>
+                            </span>
+                            <span class="fw-bold text-dark" style="font-size: 13px;">฿<?= number_format($total, 0) ?></span>
+                        </div>
+                        <?php endforeach; ?>
                     <?php if (empty($stats)): ?>
                     <small class="text-muted">ยังไม่มีข้อมูล</small>
                     <?php endif; ?>
@@ -237,7 +317,6 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                             <th class="text-start">รายการ</th>
                             <th style="width:110px;">วงเงิน (บาท)</th>
                             <th style="width:110px;">กลุ่มเงิน</th>
-                            <th style="width:130px;">ผู้ขาย/ผู้รับจ้าง</th>
                             <th style="width:100px;">สถานะ</th>
                             <?php if ($is_logged_in): ?>
                             <th style="width:90px;">จัดการ</th>
@@ -246,9 +325,12 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                     </thead>
                     <tbody>
                     <?php if (empty($orders)): ?>
-                        <tr><td colspan="<?= $is_logged_in ? 9 : 8 ?>" class="text-center text-muted py-5">
-                            <i class='bx bx-folder-open' style="font-size:40px;display:block;color:#ddd;"></i>
-                            ยังไม่มีรายการ<?= $search ? " ที่ค้นหา \"$search\"" : '' ?>
+                        <tr><td colspan="<?= $is_logged_in ? 8 : 7 ?>" class="text-center text-muted py-5" style="background:#fcfdff;">
+                            <div style="background: rgba(78,84,200,0.05); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                                <i class='bx bx-folder-open text-primary' style="font-size:40px; opacity: 0.7;"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">ยังไม่มีรายการข้อมูล</h6>
+                            <small><?= $search ? "ไม่พบผลลัพธ์ของการค้นหา \"$search\"" : 'เริ่มเพิ่มรายการจัดซื้อจัดจ้างของคุณได้เลย' ?></small>
                         </td></tr>
                     <?php else: ?>
                         <?php $total_sum = 0; foreach ($orders as $i => $o):
@@ -259,33 +341,39 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                             <td class="text-muted"><?= $i + 1 ?></td>
                             <td class="text-primary fw-bold"><?= htmlspecialchars($o['order_no']) ?></td>
                             <td><?= date('d/m/Y', strtotime($o['order_date'])) ?></td>
-                            <td class="text-start"><?= htmlspecialchars($o['title']) ?></td>
-                            <td class="fw-bold">฿<?= number_format($o['total_amount'], 2) ?></td>
+                            <td class="text-start pe-3">
+                                <div class="fw-bold text-dark"><?= htmlspecialchars($o['title']) ?></div>
+                                <?php if($o['vendor_name']): ?>
+                                <small class="text-muted"><i class='bx bx-store-alt me-1'></i><?= htmlspecialchars($o['vendor_name']) ?></small>
+                                <?php endif; ?>
+                            </td>
+                            <td class="fw-bold text-dark" style="font-size: 14px;">฿<?= number_format($o['total_amount'], 2) ?></td>
                             <td>
-                                <span class="badge" style="background:<?= $moneyGroupColor[$o['money_group']] ?? '#aaa' ?>;">
+                                <span class="badge" style="background:<?= $moneyGroupColor[$o['money_group']] ?? '#aaa' ?>; padding: 5px 10px; border-radius: 8px; font-weight: 500; font-size: 11px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                                     <?= $moneyGroupLabel[$o['money_group']] ?? $o['money_group'] ?>
                                 </span>
                             </td>
-                            <td><?= htmlspecialchars($o['vendor_name'] ?? '-') ?></td>
-                            <td><span class="badge-status <?= $sl['class'] ?>"><?= $sl['text'] ?></span></td>
+                            <td class="text-center"><span class="badge-status <?= $sl['class'] ?>"><?= $sl['text'] ?></span></td>
                             <?php if ($is_logged_in): ?>
                             <td>
-                                <button class="btn btn-sm btn-outline-warning" title="แก้ไข"
-                                        onclick="openEditModal(<?= htmlspecialchars(json_encode($o)) ?>)">
-                                    <i class='bx bx-pencil'></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger ms-1" title="ลบ"
-                                        onclick="confirmDelete(<?= $o['id'] ?>, '<?= htmlspecialchars($o['order_no'], ENT_QUOTES) ?>')">
-                                    <i class='bx bx-trash'></i>
-                                </button>
+                                <div class="d-flex justify-content-center gap-1">
+                                    <button class="btn btn-sm btn-action btn-outline-warning" title="แก้ไข"
+                                            onclick="openEditModal(<?= htmlspecialchars(json_encode($o)) ?>)">
+                                        <i class='bx bx-pencil'></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-action btn-outline-danger" title="ลบ"
+                                            onclick="confirmDelete(<?= $o['id'] ?>, '<?= htmlspecialchars($o['order_no'], ENT_QUOTES) ?>')">
+                                        <i class='bx bx-trash'></i>
+                                    </button>
+                                </div>
                             </td>
                             <?php endif; ?>
                         </tr>
                         <?php endforeach; ?>
-                        <tr class="table-light fw-bold">
+                        <tr class="table-light fw-bold" style="background: #f8faff;">
                             <td colspan="4" class="text-end">รวม</td>
-                            <td>฿<?= number_format($total_sum, 2) ?></td>
-                            <td colspan="<?= $is_logged_in ? 4 : 3 ?>"></td>
+                            <td class="text-primary" style="font-size: 14px;">฿<?= number_format($total_sum, 2) ?></td>
+                            <td colspan="<?= $is_logged_in ? 3 : 2 ?>"></td>
                         </tr>
                     <?php endif; ?>
                     </tbody>
@@ -361,9 +449,9 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-primary">กลุ่มเงิน</label>
                             <select class="form-select" name="money_group" id="form_money_group">
-                                <?php foreach ($moneyGroupLabel as $v => $t): ?>
+                                <?php foreach ($activeMoneyGroups as $v): ?>
                                 <option value="<?= $v ?>" data-color="<?= $moneyGroupColor[$v] ?? '#aaa' ?>">
-                                    <?= $t ?>
+                                    <?= $moneyGroupLabel[$v] ?? $v ?>
                                 </option>
                                 <?php endforeach; ?>
                             </select>

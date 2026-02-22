@@ -216,3 +216,24 @@ body {
 .badge-success-custom { background-color: #e8f5e9; color: #2e7d32; }
 .badge-warning-custom { background-color: #fff3e0; color: #e65100; }
 .badge-danger-custom { background-color: #ffebee; color: #c62828; }
+
+/* --- Mobile Responsiveness --- */
+@media (max-width: 768px) {
+    .sidebar {
+        left: -250px; /* Hide by default on mobile */
+    }
+    .sidebar.active {
+        left: 0;
+        box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+    }
+    .home-section {
+        width: 100%;
+        left: 0;
+    }
+    .main-content {
+        padding: 15px; /* Less padding on mobile */
+    }
+    .top-navbar {
+        padding: 15px;
+    }
+}

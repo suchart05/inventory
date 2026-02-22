@@ -9,16 +9,22 @@ require_once __DIR__ . '/backend/config/db_inventory.php';
 $aStats  = inv_row("SELECT COUNT(*) AS total, SUM(status='available') AS avail, SUM(status='inuse') AS inuse, SUM(status='repair') AS repair, SUM(status='writeoff') AS writeoff FROM assets");
 $bCount  = inv_row("SELECT COUNT(*) AS cnt FROM borrow_records WHERE status='borrowing'");
 $pCount  = inv_row("SELECT COUNT(*) AS cnt, COALESCE(SUM(total_amount),0) AS total FROM procurement_orders WHERE fiscal_year=?", [(int)(date('Y')+543)]);
+$mCount  = inv_row("SELECT COUNT(*) AS total, COALESCE(SUM(qty_in_stock),0) AS total_qty, SUM(qty_in_stock <= min_stock AND qty_in_stock > 0) AS low_stock, SUM(qty_in_stock = 0) AS out_of_stock FROM materials");
+$mTxCount = inv_row("SELECT COUNT(*) AS total FROM material_transactions");
 
 $stats = [
-    'assets'   => (int)($aStats['total']   ?? 0),
-    'avail'    => (int)($aStats['avail']   ?? 0),
-    'inuse'    => (int)($aStats['inuse']   ?? 0),
-    'repair'   => (int)($aStats['repair']  ?? 0),
-    'writeoff' => (int)($aStats['writeoff']?? 0),
-    'borrow'   => (int)($bCount['cnt']     ?? 0),
-    'procure'  => (int)($pCount['cnt']     ?? 0),
-    'budget'   => (float)($pCount['total'] ?? 0),
+    'assets'        => (int)($aStats['total']          ?? 0),
+    'avail'         => (int)($aStats['avail']           ?? 0),
+    'inuse'         => (int)($aStats['inuse']           ?? 0),
+    'repair'        => (int)($aStats['repair']          ?? 0),
+    'writeoff'      => (int)($aStats['writeoff']        ?? 0),
+    'borrow'        => (int)($bCount['cnt']             ?? 0),
+    'procure'       => (int)($pCount['cnt']             ?? 0),
+    'budget'        => (float)($pCount['total']         ?? 0),
+    'mat_total'     => (int)($mCount['total']           ?? 0),
+    'mat_low'       => (int)($mCount['low_stock']       ?? 0),
+    'mat_out'       => (int)($mCount['out_of_stock']    ?? 0),
+    'mat_tx'        => (int)($mTxCount['total']         ?? 0),
 ];
 
 $is_logged_in = isset($_SESSION['inv_user_id']);
@@ -368,15 +374,7 @@ body {
             <div class="stat-lbl">ครุภัณฑ์ทั้งหมด</div>
         </div>
     </div>
-    <div class="stat-card" style="--accent:rgba(16,185,129,.5);">
-        <div class="stat-icon" style="color:#34d399;"><i class='bx bx-check-shield'></i></div>
-        <div>
-            <div class="stat-num" style="color:#34d399;">
-                <span class="count-up" data-target="<?= $stats['avail'] ?>">0</span>
-            </div>
-            <div class="stat-lbl">พร้อมใช้งาน</div>
-        </div>
-    </div>
+
     <div class="stat-card" style="--accent:rgba(59,130,246,.5);">
         <div class="stat-icon" style="color:#60a5fa;"><i class='bx bx-user-check'></i></div>
         <div>
@@ -411,6 +409,15 @@ body {
                 ฿<?= number_format($stats['budget'],0) ?>
             </div>
             <div class="stat-lbl">วงเงินจัดซื้อ ปี 2569</div>
+        </div>
+    </div>
+    <div class="stat-card" style="--accent:rgba(251,191,36,.5);">
+        <div class="stat-icon" style="color:#fbbf24;"><i class='bx bx-folder-open'></i></div>
+        <div>
+            <div class="stat-num" style="color:#fbbf24;">
+                <span class="count-up" data-target="<?= $stats['mat_total'] ?>">0</span>
+            </div>
+            <div class="stat-lbl">วัสดุในคลัง (รายการ)</div>
         </div>
     </div>
 </div>
@@ -476,8 +483,11 @@ body {
             <div class="mod-title">บัญชีวัสดุสิ้นเปลือง</div>
             <div class="mod-desc">ตรวจสอบยอดคงเหลือ บันทึกการเบิก-จ่าย รายงานสรุปการใช้วัสดุ และวางแผนการจัดซื้อ</div>
             <div class="mod-stats">
-                <div class="mod-stat-pill"><i class='bx bx-clipboard' style="color:#fbbf24;"></i>บันทึกการเบิก</div>
-                <div class="mod-stat-pill"><i class='bx bx-bar-chart-alt' style="color:#fbbf24;"></i>รายงานสรุป</div>
+                <div class="mod-stat-pill"><i class='bx bx-folder-open' style="color:#fbbf24;"></i><b><?= $stats['mat_total'] ?></b> รายการ</div>
+                <div class="mod-stat-pill"><i class='bx bx-transfer' style="color:#fbbf24;"></i><b><?= $stats['mat_tx'] ?></b> รายการรับ/จ่าย</div>
+                <?php if ($stats['mat_low'] + $stats['mat_out'] > 0): ?>
+                <div class="mod-stat-pill" style="border-color:rgba(239,68,68,.4);"><i class='bx bx-error-circle' style="color:#f87171;"></i><b style="color:#f87171;"><?= $stats['mat_low'] + $stats['mat_out'] ?></b> ใกล้หมด/หมด</div>
+                <?php endif; ?>
             </div>
             <a href="material.php" class="mod-btn">
                 <i class='bx bx-right-arrow-circle'></i>เข้าสู่ระบบวัสดุ

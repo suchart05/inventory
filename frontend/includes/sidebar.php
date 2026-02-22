@@ -37,7 +37,7 @@
             </a>
         </li>
         <li>
-            <a href="#">
+            <a href="material.php" class="<?php echo (in_array(basename($_SERVER['PHP_SELF']), ['material.php', 'material_ledger.php'])) ? 'active' : ''; ?>">
                 <i class='bx bx-package'></i>
                 <span class="links_name">บัญชีวัสดุ</span>
             </a>

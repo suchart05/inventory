@@ -336,11 +336,14 @@ $repStatusLabel = [
         <td><span class="<?= $sl['class'] ?>"><?= $sl['text'] ?></span></td>
         <td class="text-center">
             <?php if ($is_logged_in): ?>
-                <?php if ($r['status'] === 'repairing'): ?>
-                    <button class="btn btn-sm btn-primary rounded-pill" onclick="openUpdateRepair(<?= $r['id'] ?>, <?= $r['repair_cost'] ?>)"><i class='bx bx-edit'></i> อัปเดต</button>
-                <?php else: ?>
-                    <span class="text-muted" style="font-size:12px;">ปิดงานแล้ว</span>
-                <?php endif; ?>
+                <div class="d-flex gap-1 justify-content-center">
+                    <?php if ($r['status'] === 'repairing'): ?>
+                        <button class="btn btn-sm btn-primary rounded-pill" onclick="openUpdateRepair(<?= $r['id'] ?>, <?= $r['repair_cost'] ?>)"><i class='bx bx-edit'></i> อัปเดต</button>
+                    <?php else: ?>
+                        <span class="text-muted" style="font-size:12px;">ปิดงานแล้ว</span>
+                    <?php endif; ?>
+                    <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="deleteRepair(<?= $r['id'] ?>)"><i class='bx bx-trash'></i></button>
+                </div>
             <?php else: ?>
                 -
             <?php endif; ?>
@@ -536,6 +539,36 @@ function submitUpdateRepair() {
             Swal.fire('ผิดพลาด', res.error || 'ไม่สามารถบันทึกได้', 'error');
         }
     }).catch(e => Swal.fire('ผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error'));
+}
+
+function deleteRepair(repairId) {
+    Swal.fire({
+        title: 'ลบประวัติซ่อมนี้?',
+        text: 'ยืนยันการลบรายการซ่อมนี้ออกจากระบบ ไม่สามารถยกเลิกได้',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74c3c',
+        cancelButtonColor: '#aaa',
+        confirmButtonText: 'ลบเลย',
+        cancelButtonText: 'ยกเลิก'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.showLoading();
+            fetch('backend/delete_repair.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ repair_id: repairId })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    Swal.fire('ลบแล้ว!', 'ลบรายการซ่อมเรียบร้อยแล้ว', 'success').then(() => location.reload());
+                } else {
+                    Swal.fire('ผิดพลาด', res.error || 'ไม่สามารถลบได้', 'error');
+                }
+            }).catch(e => Swal.fire('ผิดพลาด', 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้', 'error'));
+        }
+    });
 }
 </script>
 

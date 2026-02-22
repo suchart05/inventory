@@ -1,3 +1,4 @@
+<?php
 if (session_status() === PHP_SESSION_NONE) session_start();
 $is_logged_in = isset($_SESSION['inv_user_id']);
 require_once __DIR__ . '/backend/config/db_inventory.php';

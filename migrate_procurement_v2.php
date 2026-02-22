@@ -9,9 +9,10 @@ require_once __DIR__ . '/backend/config/db_inventory.php';
 $results = [];
 
 $migrations = [
-    'due_date'     => "ALTER TABLE procurement_orders ADD COLUMN due_date DATE DEFAULT NULL AFTER order_date",
-    'inspect_date' => "ALTER TABLE procurement_orders ADD COLUMN inspect_date DATE DEFAULT NULL AFTER due_date",
-    'egp_no'       => "ALTER TABLE procurement_orders ADD COLUMN egp_no VARCHAR(50) DEFAULT NULL AFTER doc_ref",
+    'due_date'         => "ALTER TABLE procurement_orders ADD COLUMN due_date DATE DEFAULT NULL AFTER order_date",
+    'inspect_date'     => "ALTER TABLE procurement_orders ADD COLUMN inspect_date DATE DEFAULT NULL AFTER due_date",
+    'egp_no'           => "ALTER TABLE procurement_orders ADD COLUMN egp_no VARCHAR(50) DEFAULT NULL AFTER doc_ref",
+    'money_group_enum' => "ALTER TABLE procurement_orders MODIFY money_group ENUM('operation','salary','special','income','subsidy','investment','support') NOT NULL DEFAULT 'operation'",
 ];
 
 foreach ($migrations as $col => $sql) {

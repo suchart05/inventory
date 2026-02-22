@@ -39,24 +39,118 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
 ?>
 <link rel="stylesheet" href="frontend/assets/css/asset.css">
 <style>
-.img-thumb { width:44px; height:44px; object-fit:cover; border-radius:8px; border:2px solid #e0e0e0; cursor:zoom-in; transition:transform .2s,box-shadow .2s; }
-.img-thumb:hover { transform:scale(1.15); box-shadow:0 4px 14px rgba(0,0,0,.2); }
-.no-img { width:44px; height:44px; border-radius:8px; background:#f0f0f0; display:inline-flex; align-items:center; justify-content:center; color:#ccc; font-size:22px; }
-#lightboxImg { max-width:100%; max-height:80vh; border-radius:12px; display:block; margin:0 auto; }
+.img-thumb { width:44px; height:44px; object-fit:cover; border-radius:8px; border:2px solid #eef0ff; cursor:zoom-in; transition:transform .3s,box-shadow .3s; }
+.img-thumb:hover { transform:scale(1.2); box-shadow:0 8px 20px rgba(0,0,0,.15); position:relative; z-index:10; }
+.no-img { width:44px; height:44px; border-radius:8px; background:rgba(0,0,0,0.03); display:inline-flex; align-items:center; justify-content:center; color:#ccc; font-size:22px; }
+#lightboxImg { max-width:100%; max-height:80vh; border-radius:16px; display:block; margin:0 auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+
+/* --- Modern UI Styles matching Procurement --- */
+.stat-info-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 20px;
+    height: 100%;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.02);
+    position: relative;
+    overflow: hidden;
+}
+.stat-info-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+}
+.stat-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; transition: transform 0.3s;
+}
+.stat-info-card:hover .stat-icon { transform: scale(1.1); }
+.icon-blue   { background: linear-gradient(135deg, rgba(78,84,200,0.1), rgba(143,148,251,0.1)); color: #4e54c8; }
+.icon-green  { background: linear-gradient(135deg, rgba(17,153,142,0.1), rgba(56,239,125,0.1)); color: #11998e; }
+.icon-teal   { background: linear-gradient(135deg, rgba(20,30,48,0.05), rgba(36,59,85,0.05)); color: #1FA2FF; }
+.icon-orange { background: linear-gradient(135deg, rgba(247,151,30,0.1), rgba(255,210,0,0.1)); color: #f7971e; }
+.icon-red    { background: linear-gradient(135deg, rgba(235,87,87,0.1), rgba(0,0,0,0.05)); color: #e74c3c; }
+
+.stat-number { font-size: 24px; font-weight: 700; line-height: 1.2; letter-spacing: -0.5px; }
+.stat-label { font-size: 13px; color: #777; font-weight: 500; }
+
+.page-title-gradient { background: linear-gradient(135deg, #11998e, #38ef7d); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.table-container-custom {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    overflow: hidden;
+    margin-top: 15px;
+}
+.card-header-custom {
+    background: #f8faff;
+    border-bottom: 1px solid #edf2f9;
+    padding: 15px 20px 0;
+}
+.asset-tabs .nav-link {
+    font-size: 14px; font-weight: 600; color: #888;
+    border: none; padding: 12px 20px;
+    border-radius: 12px 12px 0 0;
+    transition: all 0.3s;
+    position: relative;
+}
+.asset-tabs .nav-link:hover { color: #11998e; background: #eefdf5; }
+.asset-tabs .nav-link.active {
+    color: #fff;
+    background: linear-gradient(135deg, #11998e, #38ef7d);
+    box-shadow: 0 -4px 15px rgba(17,153,142,0.2);
+}
+
+.action-bar {
+    background: #fff;
+    border-radius: 20px;
+    padding: 15px 20px;
+    display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+.search-box { position: relative; flex: 1; min-width: 250px; }
+.search-box .bx { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #11998e; font-size: 18px; }
+.search-box input { 
+    padding-left: 42px; border-radius: 30px; border: 2px solid #eefdf5; 
+    height: 42px; background: #fcfdfe; transition: all 0.3s; box-shadow: inset 0 2px 5px rgba(0,0,0,0.02);
+}
+.search-box input:focus { border-color: #11998e; box-shadow: 0 0 0 4px rgba(17,153,142,0.1); background: #fff; }
+
+.table-hover tbody tr { transition: all 0.2s ease; }
+.table-hover tbody tr:hover { background-color: #f8faff !important; transform: scale(1.002); box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: relative; z-index: 10; }
+.table th { background-color: #f8faff !important; color: #555; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.5px; border-bottom: 2px solid #edf2f9; }
+
+.btn-action { transition: all 0.2s; border-radius: 10px; padding: 6px 10px; border: none; }
+.btn-action:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+
+.badge-available, .badge-inuse, .badge-repair, .badge-writeoff {
+    padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); display: inline-block;
+}
+.badge-available { background: linear-gradient(135deg,rgba(17,153,142,0.15),rgba(56,239,125,0.15)); color: #11998e; }
+.badge-inuse     { background: linear-gradient(135deg,rgba(31,162,255,0.15),rgba(18,216,250,0.15)); color: #1FA2FF; }
+.badge-repair    { background: linear-gradient(135deg,rgba(247,151,30,0.15),rgba(255,210,0,0.15)); color: #f39c12; }
+.badge-writeoff  { background: linear-gradient(135deg,rgba(235,87,87,0.15),rgba(0,0,0,0.05)); color: #e74c3c; }
+
 </style>
 
 <section class="home-section">
     <nav class="top-navbar">
-        <div class="nav-title"><h4 class="mb-0 fw-bold text-dark">ควบคุมทรัพย์สิน</h4><small class="text-muted">Asset Control Management</small></div>
-        <div class="user-profile d-flex align-items-center">
-            <i class='bx bx-user-circle' style='font-size:32px; color:#11998e; margin-right:10px;'></i>
+        <div class="nav-title"><h4 class="mb-0 fw-bold page-title-gradient" style="font-size:26px;">ควบคุมทรัพย์สิน</h4><small class="text-muted" style="letter-spacing:0.5px;">Asset Control Management</small></div>
+        <div class="user-profile d-flex align-items-center gap-2">
+            <div style="background: rgba(17,153,142,0.1); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #11998e;">
+                <i class='bx bx-user' style="font-size: 22px;"></i>
+            </div>
             <div>
                 <?php if ($is_logged_in): ?>
-                    <span class="d-block fw-semibold" style="line-height:1;"><?= htmlspecialchars($_SESSION['inv_fullname']) ?></span>
-                    <small class="text-muted"><?= htmlspecialchars($_SESSION['inv_role']) ?></small>
+                    <span class="d-block fw-bold text-dark" style="line-height:1.2; font-size:14px;"><?= htmlspecialchars($_SESSION['inv_fullname']) ?></span>
+                    <small class="text-muted" style="font-size:12px;"><?= htmlspecialchars($_SESSION['inv_role']) ?></small>
                 <?php else: ?>
-                    <span class="d-block fw-semibold" style="line-height:1;">คนทั่วไป</span>
-                    <small class="text-muted">User</small>
+                    <span class="d-block fw-bold text-dark" style="line-height:1.2; font-size:14px;">คนทั่วไป</span>
+                    <small class="text-muted" style="font-size:12px;">User</small>
                 <?php endif; ?>
             </div>
         </div>
@@ -68,13 +162,13 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
             <div class="col-6 col-md-4 col-lg">
                 <div class="stat-info-card d-flex align-items-center gap-3">
                     <div class="stat-icon icon-blue"><i class='bx bx-spreadsheet'></i></div>
-                    <div><div class="stat-number text-primary"><?= $stats['total'] ?? 0 ?></div><div class="stat-label">รายการทั้งหมด</div></div>
+                    <div><div class="stat-number" style="color:#4e54c8;"><?= $stats['total'] ?? 0 ?></div><div class="stat-label">รายการทั้งหมด</div></div>
                 </div>
             </div>
             <div class="col-6 col-md-4 col-lg">
                 <div class="stat-info-card d-flex align-items-center gap-3">
                     <div class="stat-icon icon-green"><i class='bx bx-check-circle'></i></div>
-                    <div><div class="stat-number text-success"><?= $stats['available'] ?? 0 ?></div><div class="stat-label">พร้อมใช้งาน</div></div>
+                    <div><div class="stat-number" style="color:#11998e;"><?= $stats['available'] ?? 0 ?></div><div class="stat-label">พร้อมใช้งาน</div></div>
                 </div>
             </div>
             <div class="col-6 col-md-4 col-lg">
@@ -86,13 +180,13 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
             <div class="col-6 col-md-4 col-lg">
                 <div class="stat-info-card d-flex align-items-center gap-3">
                     <div class="stat-icon icon-orange"><i class='bx bx-wrench'></i></div>
-                    <div><div class="stat-number text-warning"><?= $stats['repair'] ?? 0 ?></div><div class="stat-label">ซ่อมบำรุง</div></div>
+                    <div><div class="stat-number" style="color:#f7971e;"><?= $stats['repair'] ?? 0 ?></div><div class="stat-label">ซ่อมบำรุง</div></div>
                 </div>
             </div>
             <div class="col-6 col-md-4 col-lg">
                 <div class="stat-info-card d-flex align-items-center gap-3">
                     <div class="stat-icon icon-red"><i class='bx bx-trash-alt'></i></div>
-                    <div><div class="stat-number text-danger"><?= $stats['writeoff'] ?? 0 ?></div><div class="stat-label">จำหน่ายออก</div></div>
+                    <div><div class="stat-number" style="color:#e74c3c;"><?= $stats['writeoff'] ?? 0 ?></div><div class="stat-label">จำหน่ายออก</div></div>
                 </div>
             </div>
         </div>
@@ -102,20 +196,25 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
         <div class="action-bar mb-4">
             <div class="search-box">
                 <i class='bx bx-search'></i>
-                <input type="text" name="search" class="form-control" placeholder="ค้นหา (ชื่อ, รหัส, ประเภท)..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
+                <input type="text" name="search" class="form-control border-0" placeholder="ค้นหา (ชื่อ, รหัส, ประเภท)..." value="<?= htmlspecialchars($_GET['search'] ?? '') ?>">
             </div>
-            <select name="category" class="form-select" style="width:auto;height:40px;border-radius:10px;font-size:14px;">
-                <option value="">ทุกประเภท</option>
-                <?php foreach ($categories as $cat): ?>
-                <option value="<?= $cat['code'] ?>" <?= (($_GET['category']??'') === $cat['code']) ? 'selected' : '' ?>><?= htmlspecialchars($cat['code'].' - '.$cat['name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" class="btn btn-primary rounded-pill px-3" style="height:40px;font-size:14px;"><i class='bx bx-search me-1'></i>ค้นหา</button>
-            <?php if ($is_logged_in): ?>
-            <button type="button" class="btn btn-success rounded-pill px-4 fw-medium" style="height:40px;font-size:14px;display:inline-flex;align-items:center;" onclick="openAuthModal('add_asset.php')"><i class='bx bx-plus me-1'></i> ขึ้นทะเบียนทรัพย์สิน</button>
-            <?php endif; ?>
-            <a href="print_qr.php" class="btn btn-outline-primary rounded-pill px-3" style="height:40px;font-size:14px;display:inline-flex;align-items:center;"><i class='bx bx-qr me-1'></i> พิมพ์ QR</a>
-            <a href="asset.php" class="btn btn-outline-secondary rounded-pill px-3" style="height:40px;font-size:14px;display:inline-flex;align-items:center;"><i class='bx bx-refresh'></i></a>
+            <div class="d-flex align-items-center gap-2">
+                <select name="category" class="form-select border-0" style="background:#fcfdfe; box-shadow:inset 0 2px 5px rgba(0,0,0,0.02); height:42px; border-radius:30px; padding:0 35px 0 20px; font-weight:500;">
+                    <option value="">ทุกประเภท</option>
+                    <?php foreach ($categories as $cat): ?>
+                    <option value="<?= $cat['code'] ?>" <?= (($_GET['category']??'') === $cat['code']) ? 'selected' : '' ?>><?= htmlspecialchars($cat['code'].' - '.$cat['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn text-white rounded-pill px-4 fw-medium" style="height:42px; background:linear-gradient(135deg,#11998e,#38ef7d); border:none; box-shadow:0 4px 10px rgba(17,153,142,0.2);">ค้นหา</button>
+            </div>
+            
+            <div class="ms-auto d-flex gap-2">
+                <?php if ($is_logged_in): ?>
+                <button type="button" class="btn text-white rounded-pill px-4 fw-medium" style="height:42px; background:linear-gradient(135deg,#4e54c8,#8f94fb); border:none; box-shadow:0 4px 10px rgba(78,84,200,0.2); display:inline-flex; align-items:center;" onclick="openAuthModal('add_asset.php')"><i class='bx bx-plus me-1'></i> ขึ้นทะเบียนทรัพย์สิน</button>
+                <?php endif; ?>
+                <a href="print_qr.php" class="btn btn-light rounded-pill px-3" style="height:42px; font-size:14px; display:inline-flex; align-items:center; font-weight:600; color:#555; border:1px solid #eee;"><i class='bx bx-qr me-1 text-primary'></i> พิมพ์ QR</a>
+                <a href="asset.php" class="btn btn-light rounded-pill px-3" style="height:42px; font-size:14px; display:inline-flex; align-items:center; border:1px solid #eee;"><i class='bx bx-refresh text-secondary'></i></a>
+            </div>
         </div>
         </form>
 
@@ -148,9 +247,12 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
                         </thead>
                         <tbody>
                         <?php if (empty($assets)): ?>
-                            <tr><td colspan="10" class="text-center text-muted py-5">
-                                <i class='bx bx-box' style="font-size:40px;display:block;margin-bottom:8px;color:#ccc;"></i>
-                                ไม่พบข้อมูลครุภัณฑ์ — <a href="#" onclick="openAuthModal('add_asset.php');return false;">เพิ่มรายการแรก</a>
+                            <tr><td colspan="10" class="text-center text-muted py-5" style="background:#fcfdff;">
+                                <div style="background: rgba(17,153,142,0.05); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px;">
+                                    <i class='bx bx-box' style="font-size:40px; color:#11998e; opacity: 0.8;"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">ไม่พบข้อมูลครุภัณฑ์</h6>
+                                <small>ลองปรับตัวคัดกรอง หรือ <a href="#" class="text-primary text-decoration-none fw-medium" onclick="openAuthModal('add_asset.php');return false;">เพิ่มรายการแรก</a></small>
                             </td></tr>
                         <?php else: ?>
                         <?php foreach ($assets as $i => $a):
@@ -166,9 +268,9 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
                                     <span class="no-img" title="ไม่มีรูป"><i class='bx bx-image-alt'></i></span>
                                 <?php endif; ?>
                                 </td>
-                                <td><code class="text-primary"><?= htmlspecialchars($a['code']) ?></code></td>
-                                <td class="fw-medium"><?= htmlspecialchars($a['name']) ?></td>
-                                <td><span class="badge bg-light text-dark"><?= htmlspecialchars($a['category_code'].' - '.($a['cat_name']??'')) ?></span></td>
+                                <td><code style="color:#4e54c8; background:rgba(78,84,200,0.05); padding:4px 8px; border-radius:6px; font-weight:600;"><?= htmlspecialchars($a['code']) ?></code></td>
+                                <td class="fw-bold text-dark"><?= htmlspecialchars($a['name']) ?></td>
+                                <td><span class="badge" style="background:rgba(20,30,48,0.06); color:#444; font-weight:500; padding:5px 8px;"><?= htmlspecialchars($a['category_code'].' - '.($a['cat_name']??'')) ?></span></td>
                                 <td><?= $a['receive_date'] ? date('d/m/Y', strtotime($a['receive_date'])) : '-' ?></td>
                                 <td><?= number_format($a['cost'],2) ?></td>
                                 <td><?= htmlspecialchars($a['location'] ?? '-') ?></td>

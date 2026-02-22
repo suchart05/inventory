@@ -13,7 +13,7 @@
     <!-- Boxicons for Icons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="frontend/assets/css/style.css">
+    <link rel="stylesheet" href="frontend/assets/css/style.css?v=<?= time() ?>">
 </head>
 <body>
     <div class="wrapper">

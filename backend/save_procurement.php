@@ -37,7 +37,7 @@ if (!$order_no && $id === 0) {
     $order_no = $prefix . str_pad($count['n'] ?? 1, 2, '0', STR_PAD_LEFT) . '/' . $fiscal_year;
 }
 
-$allowed_money  = ['operation','salary','special','income','subsidy','investment'];
+$allowed_money  = ['operation','salary','investment','support','special','income','subsidy'];
 $allowed_status = ['pending','approved','received','cancelled'];
 
 if (!$order_date || !$title) {
