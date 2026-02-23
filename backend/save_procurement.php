@@ -29,6 +29,29 @@ $egp_no       = trim($_POST['egp_no']       ?? '') ?: null;
 $vendor_name  = trim($_POST['vendor_name']  ?? '') ?: null;
 $note         = trim($_POST['note']         ?? '') ?: null;
 $created_by   = $_SESSION['inv_user_id'];
+$is_asset_related = isset($_POST['is_asset_related']) && $_POST['is_asset_related'] == '1' ? 1 : 0;
+
+// Auto-migrate (if columns don't exist yet)
+try {
+    inv_exec("ALTER TABLE procurement_orders ADD COLUMN attachment_path VARCHAR(255) NULL AFTER note, ADD COLUMN is_asset_related TINYINT(1) DEFAULT 0 AFTER attachment_path");
+} catch (Exception $e) {}
+
+$attachment_path = null;
+if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+    $upload_dir = __DIR__ . '/../uploads/procurements/';
+    if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+    
+    $ext = pathinfo($_FILES['attachment']['name'], PATHINFO_EXTENSION);
+    $filename = 'proc_' . time() . '_' . uniqid() . '.' . $ext;
+    $target_file = $upload_dir . $filename;
+    
+    $allowed = ['pdf', 'jpg', 'jpeg', 'png'];
+    if (in_array(strtolower($ext), $allowed)) {
+        if (move_uploaded_file($_FILES['attachment']['tmp_name'], $target_file)) {
+            $attachment_path = 'uploads/procurements/' . $filename;
+        }
+    }
+}
 
 // Auto-generate order_no if not provided
 if (!$order_no && $id === 0) {
@@ -49,27 +72,34 @@ $order_date   = $order_date ?: null;
 
 if ($id > 0) {
     // --- UPDATE ---
-    inv_exec(
-        "UPDATE procurement_orders SET
+    $query_update = "UPDATE procurement_orders SET
             order_no=?, order_type=?, order_date=?, due_date=?, inspect_date=?,
             fiscal_year=?, title=?, total_amount=?, money_group=?, proc_method=?,
-            status=?, doc_ref=?, egp_no=?, vendor_name=?, note=?
-         WHERE id=?",
-        [$order_no, $order_type, $order_date, $due_date, $inspect_date,
-         $fiscal_year, $title, $total_amount, $money_group, $proc_method,
-         $status, $doc_ref, $egp_no, $vendor_name, $note, $id]
-    );
+            status=?, doc_ref=?, egp_no=?, vendor_name=?, note=?, is_asset_related=?";
+    $params_update = [$order_no, $order_type, $order_date, $due_date, $inspect_date,
+             $fiscal_year, $title, $total_amount, $money_group, $proc_method,
+             $status, $doc_ref, $egp_no, $vendor_name, $note, $is_asset_related];
+             
+    if ($attachment_path) {
+        $query_update .= ", attachment_path=?";
+        $params_update[] = $attachment_path;
+    }
+    
+    $query_update .= " WHERE id=?";
+    $params_update[] = $id;
+
+    inv_exec($query_update, $params_update);
 } else {
     // --- INSERT ---
     inv_exec(
         "INSERT INTO procurement_orders
             (order_no, order_type, order_date, due_date, inspect_date,
              fiscal_year, title, total_amount, money_group, proc_method,
-             status, doc_ref, egp_no, vendor_name, note, created_by)
-         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+             status, doc_ref, egp_no, vendor_name, note, created_by, attachment_path, is_asset_related)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [$order_no, $order_type, $order_date, $due_date, $inspect_date,
          $fiscal_year, $title, $total_amount, $money_group, $proc_method,
-         $status, $doc_ref, $egp_no, $vendor_name, $note, $created_by]
+         $status, $doc_ref, $egp_no, $vendor_name, $note, $created_by, $attachment_path, $is_asset_related]
     );
 }
 

@@ -10,6 +10,8 @@ $isEdit = $id > 0;
 $asset  = [];
 $categories = inv_query("SELECT code, name, useful_life, dep_rate FROM asset_categories ORDER BY code");
 
+$procurements = inv_query("SELECT id, order_no, title, vendor_name, note, total_amount, attachment_path FROM procurement_orders WHERE is_asset_related = 1 ORDER BY id DESC LIMIT 100");
+
 // ---- Load existing asset if editing ----
 if ($isEdit) {
     $asset = inv_row("SELECT * FROM assets WHERE id=?", [$id]);
@@ -223,6 +225,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <form id="assetForm" method="POST" action="add_asset.php<?= $isEdit ? '?id='.$id : '' ?>" enctype="multipart/form-data">
                 <div class="row g-3">
+                    <!-- Procurement Link -->
+                    <div class="col-12 mb-2">
+                        <div class="p-3" style="background:#f8f9ff; border:1px solid #c5caff; border-radius:12px;">
+                            <label class="form-label fw-bold text-primary" style="font-size:14px;"><i class='bx bx-link me-2'></i>อ้างอิงข้อมูลจากการจัดซื้อ/จัดจ้าง <span class="fw-normal text-muted">(เพื่อให้แสดงไฟล์ใบเสร็จ และดึงข้อมูลราคา/ผู้ขาย)</span></label>
+                            <div class="d-flex gap-2">
+                                <select class="form-select w-100" id="procurement_ref" onchange="onProcurementChange(this)">
+                                    <option value="">- เลือกรายการจัดซื้อ (ถ้ามี) -</option>
+                                    <?php foreach ($procurements as $p): ?>
+                                    <option value="<?= $p['id'] ?>"
+                                            data-vendor="<?= htmlspecialchars($p['vendor_name'] ?? '') ?>"
+                                            data-cost="<?= floatval($p['total_amount'] ?? 0) ?>"
+                                            data-doc-ref="<?= htmlspecialchars($p['order_no'] ?? '') ?>"
+                                            data-attachment="<?= htmlspecialchars($p['attachment_path'] ?? '') ?>">
+                                        <?= htmlspecialchars($p['order_no']) ?>: <?= htmlspecialchars($p['title']) ?> (<?= number_format($p['total_amount'], 2) ?> บาท)
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <a href="#" id="btnPreviewAttachment" target="_blank" class="btn btn-outline-info" style="display:none; white-space:nowrap;"><i class='bx bx-file-find'></i> ดูไฟล์แนบ</a>
+                                <button type="button" id="btnFillData" class="btn btn-primary" style="display:none; white-space:nowrap;" onclick="fillProcurementData()"><i class='bx bx-import'></i> ดึงข้อมูลมาเติม</button>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Row 1: เลขทะเบียน | ประเภท | ชื่อรายการ -->
                     <div class="col-md-4">
@@ -253,18 +277,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <!-- Row 2: สถานที่ | รุ่น/แบบ -->
                     <div class="col-md-6">
-                        <label class="form-label">อายุตามเกณฑ์ (ปี)</label>
-                        <input type="number" class="form-control auto-fill-input"
-                               id="assetAgeInput" name="useful_life" readonly
-                               value="<?= htmlspecialchars($asset['useful_life'] ?? '') ?>"
-                               placeholder="ดึงจากประเภทอัตโนมัติ">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">อัตราค่าเสื่อม (%)</label>
-                        <input type="number" class="form-control auto-fill-input"
-                               id="assetRateInput" name="dep_rate" step="0.01" readonly
-                               value="<?= htmlspecialchars($asset['dep_rate'] ?? '') ?>"
-                               placeholder="ดึงจากประเภทอัตโนมัติ">
+                        <label class="form-label">สถานที่ตั้ง/ใช้งาน</label>
+                        <input type="text" class="form-control" name="location"
+                               value="<?= htmlspecialchars($asset['location'] ?? '') ?>">
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">รุ่น/แบบ</label>
@@ -363,16 +378,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <!-- Row 7: อายุ | ค่าเสื่อม (auto-fill) -->
                     <div class="col-md-6">
-                        <label class="form-label">อายุ (ปี)</label>
+                        <label class="form-label">อายุตามเกณฑ์ (ปี)</label>
                         <input type="number" class="form-control auto-fill-input"
-                               id="assetAgeInput" name="useful_life"
-                               value="<?= htmlspecialchars($asset['useful_life'] ?? '') ?>">
+                               id="assetAgeInput" name="useful_life" readonly
+                               value="<?= htmlspecialchars($asset['useful_life'] ?? '') ?>"
+                               placeholder="ดึงจากประเภทอัตโนมัติ">
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">ค่าเสื่อม (%)</label>
+                        <label class="form-label">อัตราค่าเสื่อม (%)</label>
                         <input type="number" class="form-control auto-fill-input"
-                               id="assetRateInput" name="dep_rate" step="0.01"
-                               value="<?= htmlspecialchars($asset['dep_rate'] ?? '') ?>">
+                               id="assetRateInput" name="dep_rate" step="0.01" readonly
+                               value="<?= htmlspecialchars($asset['dep_rate'] ?? '') ?>"
+                               placeholder="ดึงจากประเภทอัตโนมัติ">
                     </div>
 
                     <!-- Batch section -->
@@ -402,6 +419,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
 <script>
+    function onProcurementChange(sel) {
+        let opt = sel.options[sel.selectedIndex];
+        let fileBtn = document.getElementById('btnPreviewAttachment');
+        let fillBtn = document.getElementById('btnFillData');
+        
+        if (sel.value) {
+            let fileUrl = opt.getAttribute('data-attachment');
+            if (fileUrl) {
+                fileBtn.href = fileUrl;
+                fileBtn.style.display = 'inline-block';
+            } else {
+                fileBtn.style.display = 'none';
+            }
+            fillBtn.style.display = 'inline-block';
+        } else {
+            fileBtn.style.display = 'none';
+            fillBtn.style.display = 'none';
+        }
+    }
+
+    function fillProcurementData() {
+        let sel = document.getElementById('procurement_ref');
+        let opt = sel.options[sel.selectedIndex];
+        if (!sel.value) return;
+
+        let vendor = opt.getAttribute('data-vendor');
+        let cost = opt.getAttribute('data-cost');
+        let docRef = opt.getAttribute('data-doc-ref');
+
+        let costInput = document.querySelector('input[name="cost"]');
+        let vendorInput = document.querySelector('input[name="vendor_name"]');
+        let docRefInput = document.querySelector('input[name="doc_ref"]');
+
+        let filledAnything = false;
+
+        if (costInput && (!costInput.value || costInput.value == '0') && cost) { costInput.value = cost; filledAnything = true; }
+        if (vendorInput && !vendorInput.value && vendor) { vendorInput.value = vendor; filledAnything = true; }
+        if (docRefInput && !docRefInput.value && docRef) { docRefInput.value = docRef; filledAnything = true; }
+        
+        if (filledAnything) {
+            Swal.fire({
+                icon: 'success',
+                title: 'ดึงข้อมูลสำเร็จ',
+                text: 'เติม ราคา, ผู้ขาย และที่เอกสาร เรียบร้อยแล้ว (เฉพาะช่องว่าง)',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire({
+                icon: 'info',
+                title: 'ไม่มีข้อมูลให้เติม',
+                text: 'อาจจะมีข้อมูลอยู่แล้ว หรือรายการจัดซื้อจัดจ้างนี้ไม่ได้ระบุรายละเอียดเอาไว้',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+    }
+
     <?php if ($success): ?>
     Swal.fire({ icon:'success', title:'<?= $isEdit ? "แก้ไขสำเร็จ!" : "บันทึกสำเร็จ!" ?>',
         text:'ข้อมูลทรัพย์สินถูกบันทึกเรียบร้อยแล้ว',

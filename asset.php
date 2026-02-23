@@ -222,7 +222,11 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
                 <?php if ($is_logged_in): ?>
                 <button type="button" class="btn text-white rounded-pill px-4 fw-medium" style="height:42px; background:linear-gradient(135deg,#4e54c8,#8f94fb); border:none; box-shadow:0 4px 10px rgba(78,84,200,0.2); display:inline-flex; align-items:center;" onclick="openAuthModal('add_asset.php')"><i class='bx bx-plus me-1'></i> ขึ้นทะเบียนทรัพย์สิน</button>
                 <?php endif; ?>
-                <a href="print_qr.php" class="btn btn-light rounded-pill px-3" style="height:42px; font-size:14px; display:inline-flex; align-items:center; font-weight:600; color:#555; border:1px solid #eee;"><i class='bx bx-qr me-1 text-primary'></i> พิมพ์ QR</a>
+                <a href="print_qr.php" class="btn btn-light rounded-pill px-3" style="height:42px; font-size:14px; display:inline-flex; align-items:center; font-weight:600; color:#555; border:1px solid #eee;"><i class='bx bx-qr me-1 text-primary'></i> พิมพ์ QR</a> <?php if ($is_logged_in): ?>
+<a href="annual_report_ui.php" class="btn btn-light rounded-pill px-3 ms-1" style="height:42px; font-size:14px; display:inline-flex; align-items:center; font-weight:600; color:#555; border:1px solid #eee;">
+    <i class='bx bx-printer me-1' style="color: #11998e;"></i> รายงานประจำปี
+</a>
+<?php endif; ?>
                 <a href="asset.php" class="btn btn-light rounded-pill px-3" style="height:42px; font-size:14px; display:inline-flex; align-items:center; border:1px solid #eee;"><i class='bx bx-refresh text-secondary'></i></a>
             </div>
         </div>
@@ -356,6 +360,12 @@ $is_logged_in = isset($_SESSION['inv_user_id']);
                 </div>
             </div>
         </div>
+
+        <!-- Developer Credit -->
+        <div class="mt-4 text-center text-muted" style="font-size: 13px; opacity: 0.8;">
+            <i class='bx bx-code-alt me-1'></i> พัฒนาระบบโดย: <strong>ครูสุชาติ คู่แก้ว</strong> ครูชำนาญการพิเศษ
+        </div>
+
     </div>
 </section>
 

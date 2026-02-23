@@ -327,6 +327,12 @@ $materials = inv_query("SELECT * FROM materials $where ORDER BY name ASC LIMIT $
                 </div>
             </div>
         </div>
+
+        <!-- Developer Credit -->
+        <div class="mt-4 mb-2 text-center text-muted" style="font-size: 13px; opacity: 0.8;">
+            <i class='bx bx-code-alt me-1'></i> พัฒนาระบบโดย: <strong>ครูสุชาติ คู่แก้ว</strong> ครูชำนาญการพิเศษ
+        </div>
+
     </div>
 </section>
 

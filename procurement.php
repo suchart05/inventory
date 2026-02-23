@@ -356,6 +356,12 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                                 <?php if($o['vendor_name']): ?>
                                 <small class="text-muted"><i class='bx bx-store-alt me-1'></i><?= htmlspecialchars($o['vendor_name']) ?></small>
                                 <?php endif; ?>
+                                <?php if($o['is_asset_related'] ?? 0): ?>
+                                <div class="mt-1"><span class="badge bg-info text-dark" style="font-size:10px;"><i class='bx bx-check-shield'></i> รอลงทะเบียนทรัพย์สิน</span></div>
+                                <?php endif; ?>
+                                <?php if($o['attachment_path'] ?? ''): ?>
+                                <div class="mt-1"><a href="<?= htmlspecialchars($o['attachment_path']) ?>" target="_blank" class="badge bg-secondary text-decoration-none" style="font-size:10px;"><i class='bx bx-paperclip'></i> ดูไฟล์แนบ</a></div>
+                                <?php endif; ?>
                             </td>
                             <td class="fw-bold text-dark" style="font-size: 14px;">฿<?= number_format($o['total_amount'], 2) ?></td>
                             <td>
@@ -439,6 +445,11 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
 
         </div><!-- end table-container -->
 
+        <!-- Developer Credit -->
+        <div class="mt-4 text-center text-muted" style="font-size: 13px; opacity: 0.8;">
+            <i class='bx bx-code-alt me-1'></i> พัฒนาระบบโดย: <strong>ครูสุชาติ คู่แก้ว</strong> ครูชำนาญการพิเศษ
+        </div>
+
     </div><!-- end main-content -->
 </section>
 
@@ -455,7 +466,7 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
 <div class="modal fade" id="orderModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered" style="max-width:700px;">
         <div class="modal-content" style="border-radius:16px; overflow:hidden;">
-            <form method="POST" action="backend/save_procurement.php">
+            <form method="POST" action="backend/save_procurement.php" enctype="multipart/form-data">
                 <input type="hidden" name="order_id" id="form_id">
                 <div class="modal-header modal-header-blue border-0">
                     <h5 class="modal-title fw-bold" id="modalTitle">
@@ -468,9 +479,15 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
 
                         <!-- Row 1: เลขที่ | ปีงบ | ประเภท | วันที่รายงาน -->
                         <div class="col-md-3">
-                            <label class="form-label fw-bold">เลขที่ <small class="text-muted fw-normal">(ถ้าไม่ใส่จะ Auto)</small></label>
-                            <input type="text" class="form-control" name="order_no" id="form_order_no"
-                                   placeholder="เช่น ซ27/2569">
+                            <label class="form-label fw-bold">เลขที่ <small class="text-muted fw-normal">(แก้ไขได้)</small></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control fw-bold" name="order_no" id="form_order_no"
+                                       placeholder="กำลังโหลด...">
+                                <button type="button" class="btn btn-outline-secondary" title="สร้างเลขที่ใหม่"
+                                        onclick="refreshOrderNo()" id="btn_refresh_no">
+                                    <i class='bx bx-refresh'></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label fw-bold">ปีงบประมาณ</label>
@@ -563,6 +580,25 @@ if (!$years) $years = [['fiscal_year' => $current_year]];
                             </select>
                         </div>
 
+                        <!-- Row 9: ความเกี่ยวเนื่องกับทรัพย์สิน / ไฟล์แนบ -->
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="form_is_asset_related" name="is_asset_related" value="1" style="cursor: pointer; transform: scale(1.2); margin-top: 3px;">
+                                <label class="form-check-label fw-bold text-primary ms-1" for="form_is_asset_related" style="cursor: pointer;">
+                                    <i class='bx bx-check-shield'></i> การจัดซื้อ/จ้างนี้ มีรายการที่ต้องลงทะเบียนคุมทรัพย์สิน
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold">แนบไฟล์เอกสารอ้างอิง <small class="text-muted">(ใบเสร็จ / ใบส่งของ - รูปภาพ หรือ PDF)</small></label>
+                            <input type="file" class="form-control" name="attachment" id="form_attachment" accept=".pdf,.jpg,.jpeg,.png">
+                            <div id="current_attachment_div" class="mt-2" style="display:none;">
+                                <small class="text-muted">ไฟล์แนบปัจจุบัน: </small>
+                                <a href="#" id="current_attachment_link" target="_blank" class="btn btn-sm btn-outline-info rounded-pill py-0 px-2" style="font-size: 12px;"><i class='bx bx-link-external'></i> ดูไฟล์แนบ</a>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                 <div class="modal-footer border-0 bg-light py-3 px-4" style="border-radius:0 0 16px 16px;">
@@ -603,9 +639,29 @@ function fpSetDate(id, isoDate) {
     }
 }
 
+function fetchNextOrderNo(orderType, fiscalYear, callback) {
+    const url = 'backend/get_next_order_no.php?order_type=' + encodeURIComponent(orderType)
+              + '&fiscal_year=' + encodeURIComponent(fiscalYear);
+    fetch(url)
+        .then(r => r.json())
+        .then(data => { if (callback) callback(data.order_no); })
+        .catch(() => { if (callback) callback(''); });
+}
+
+function refreshOrderNo() {
+    const orderType  = document.getElementById('form_order_type').value;
+    const fiscalYear = document.getElementById('form_fiscal_year').value;
+    const btn = document.getElementById('btn_refresh_no');
+    if (btn) { btn.disabled = true; btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i>"; }
+    fetchNextOrderNo(orderType, fiscalYear, function(no) {
+        document.getElementById('form_order_no').value = no;
+        if (btn) { btn.disabled = false; btn.innerHTML = "<i class='bx bx-refresh'></i>"; }
+    });
+}
+
 function openAddModal() {
     document.getElementById('form_id').value          = '';
-    document.getElementById('form_order_no').value     = '';
+    document.getElementById('form_order_no').value     = 'กำลังโหลด...';
     document.getElementById('form_order_type').value  = '<?= $tab ?>';
     document.getElementById('form_title').value       = '';
     document.getElementById('form_fiscal_year').value = '<?= $fiscal_year ?>';
@@ -616,12 +672,27 @@ function openAddModal() {
     document.getElementById('form_vendor_name').value = '';
     document.getElementById('form_egp_no').value      = '';
     document.getElementById('form_note').value        = '';
+    document.getElementById('form_is_asset_related').checked = false;
+    document.getElementById('form_attachment').value  = '';
+    document.getElementById('current_attachment_div').style.display = 'none';
     fpSetDate('form_order_date', '');
     fpSetDate('form_due_date', '');
     fpSetDate('form_inspect_date', '');
     document.getElementById('modalTitle').innerHTML = "<i class='bx bx-plus-circle me-2'></i>บันทึกรายการใหม่";
+    // ดึงเลขที่ถัดไปจากระบบ
+    fetchNextOrderNo('<?= $tab ?>', '<?= $fiscal_year ?>', function(no) {
+        document.getElementById('form_order_no').value = no;
+    });
     new bootstrap.Modal(document.getElementById('orderModal')).show();
 }
+
+// เมื่อเปลี่ยนประเภท (ซื้อ/จ้าง) ใน modal Add ให้ refresh เลขที่ด้วย
+document.getElementById('form_order_type')?.addEventListener('change', function() {
+    // refresh เฉพาะเมื่อเป็น Add mode (form_id ว่าง)
+    if (!document.getElementById('form_id').value) {
+        refreshOrderNo();
+    }
+});
 
 function openEditModal(data) {
     document.getElementById('form_id').value          = data.id;
@@ -636,6 +707,14 @@ function openEditModal(data) {
     document.getElementById('form_vendor_name').value = data.vendor_name || '';
     document.getElementById('form_egp_no').value      = data.egp_no || '';
     document.getElementById('form_note').value        = data.note || '';
+    document.getElementById('form_is_asset_related').checked = (data.is_asset_related == 1);
+    document.getElementById('form_attachment').value  = '';
+    if (data.attachment_path) {
+        document.getElementById('current_attachment_div').style.display = 'block';
+        document.getElementById('current_attachment_link').href = data.attachment_path;
+    } else {
+        document.getElementById('current_attachment_div').style.display = 'none';
+    }
     fpSetDate('form_order_date',   data.order_date   ? data.order_date.substring(0,10)   : '');
     fpSetDate('form_due_date',     data.due_date      ? data.due_date.substring(0,10)     : '');
     fpSetDate('form_inspect_date', data.inspect_date  ? data.inspect_date.substring(0,10) : '');

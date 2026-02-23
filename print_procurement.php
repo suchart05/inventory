@@ -36,11 +36,13 @@ function thaiDate($date) {
 // ---- Money group label ----
 $moneyLabel = [
     'operation'  => 'งบดำเนินงาน',
-    'salary'     => 'จ้างเหมา',
+    'salary'     => 'จ้างเหมา/เงินเดือน',
+    'investment' => 'ลงทุน/ซ่อมแซม',
+    'support'    => 'งบสนับสนุน',
+    // Legacy mapping
     'special'    => 'โครงการพิเศษ',
     'income'     => 'รายได้สถานศึกษา',
     'subsidy'    => 'อุดหนุน อปท.',
-    'investment' => 'ลงทุน/ซ่อมแซม',
 ];
 
 $typeLabel = $order_type === 'hire' ? 'จัดจ้าง' : ($order_type === 'all' ? 'จัดซื้อ/จัดจ้าง' : 'จัดซื้อ');
